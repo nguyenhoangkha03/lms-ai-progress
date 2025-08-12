@@ -1,3 +1,1 @@
-
-            print(estimatedDuration)
-            print(videoDuration)
+, 2)

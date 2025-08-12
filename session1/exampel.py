@@ -1,6 +1,7 @@
 import pymysql
 import numpy as np
 import pandas as pd
+import calendar
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
@@ -882,16 +883,18 @@ class Learning_assessment:
         return data
     
     def _get_session(self, user_id: str):
+        now = datetime.now()
         where_clause = f"""
-            WHERE ls.studentId = '{user_id}' AND ls.status = 'completed'
+            WHERE ls.studentId = '{user_id}' AND ls.status = 'completed' AND MONTH(ls.startTime) = '{now.month}'
             ORDER BY ls.startTime ASC
             """
         session = self.db.select("learning_sessions ls", "DISTINCT ls.startTime, ls.endTime, ls.status, ls.duration, ls.activitiesCount",where_clause)
+        # session_time = self.db.select("learning_sessions ls", "SUM(ls.duration) AS total_duration_session, ROUND(AVG(ls.duration), 2) AS avg_duration_session, ROUND(STDDEV_POP(ls.duration), 2) AS std_duration_session ", where_clause)
         
         analysis_session = self._analysis_session(session)
         #Tính tổng số phiên, sự chênh lêch giữa các phiên, thời lượng trung bình giữa các phiên
         # print(session)  
-        print(analysis_session)
+        # print(analysis_session)
         # print(session[0]['endTime'])
        
         
@@ -912,18 +915,19 @@ class Learning_assessment:
         
     
     def _get_time_study_lesson(self, user_id : str):
-        where_clause = f"JOIN lessons ls ON ls.id = lsp.lessonId WHERE lsp.studentId = '{user_id}' AND lsp.status = 'in_progress'"
+        now = datetime.now()
+        where_clause = f"JOIN lessons ls ON ls.id = lsp.lessonId WHERE lsp.studentId = '{user_id}' AND lsp.status = 'in_progress' AND MONTH(lsp.lastAccessedAt) = '{now.month}' ORDER BY lsp.lastAccessedAt DESC"
         
-        time_study = self.db.select("lesson_progress lsp", "ls.videoDuration,ls.estimatedDuration, lsp.timeSpent, lsp.progressPercentage, lsp.firstAccessedAt, lsp.lastAccessedAt, lsp.status, lsp.isSkipped", where_clause)
+        lesson_progress = self.db.select("lesson_progress lsp", "DISTINCT ls.videoDuration,ls.estimatedDuration, lsp.timeSpent, lsp.progressPercentage, lsp.firstAccessedAt, lsp.lastAccessedAt, lsp.status", where_clause)
+        # lesson_progress_time = self.db.select("lesson_progress lsp", "ROUND(SUM(lsp.timeSpent),2) AS total_time_study, ROUND(AVG(lsp.timeSpent),2) AS avg_time_study, ROUND(STDDEV_POP(lsp.timeSpent), 2) AS std_time_study", where_clause)
+        # print(lesson_progress_time)
         
-        # print(time_study))
-        
-        analysis_time = self._analysis_time_(time_study)
+        analysis_time = self._analysis_time_(lesson_progress)
         # print(analysis_time)
         
         return{
-            'time': time_study,
-            'learning attitude': analysis_time
+            'time': lesson_progress,
+            'learning_attitude': analysis_time
         }
         
     def _analysis_session(self, session): # 0,1, 2
@@ -943,28 +947,26 @@ class Learning_assessment:
         return day_gap
     
     def _analysis_time_(self, time_study_list: list):
-   
-        results = []
+        results = {}
         time_study = []
         estimatedDuration = []
         videoDuration = []
         days_study = []
-        skip_lesson = []
         # print(time_study_list)
         # if time_study_list[0]['lastAccessedAt'] and time_study_list[0]['firstAccessedAt']:
         #     days_study = max((time_study_list[0]['lastAccessedAt'].date() - time_study_list[0]['firstAccessedAt'].date()).days, 1)
         for record in time_study_list:
+        
             est_min = record.get('estimatedDuration') or 0   # phút
             vid_sec = record.get('videoDuration') or 0       # giây
             time_for_ls = record.get('timeSpent', 0)
             last = record.get('lastAccessedAt', [])
             start = record.get('firstAccessedAt', [])
-            skip = record.get('isSkipped', [])
+            if not last:
+                continue
             if start and last:
                 study_day = max((last.date() - start.date()).days, 1)
                 days_study.append(study_day)
-            # print(start, last)
-            skip_lesson.append(skip)
             estimatedDuration.append(est_min * 60)  # đổi phút → giây
             videoDuration.append(vid_sec)
             time_study.append(time_for_ls)
@@ -974,20 +976,19 @@ class Learning_assessment:
         avg_sec_per_day = round((totalTimeStudy/timmeDuration) * 100, 2)
         
 
-        print(days_study)
-        results.append({
+        # print(days_study)
+        results = {
             'total_days_study': days_study,
             'percent_time_study': avg_sec_per_day,
-            'skip': skip_lesson
-        })
+        }
         # print(videoDuration)
 
         return results
         
 class RandomForestLearninAttube:
     Learning_attitude = {
-        0 : 'Hard_work_quick_grasp',
-        1 : 'Hard_work_slow_grasp',
+        0 : 'Hard_work',
+        1 : 'Good_student',
         2 : 'Distraction',
         3 : 'Lazy',
         4 : 'Give_up',
@@ -1012,28 +1013,72 @@ class RandomForestLearninAttube:
         
         #Tính tổng, độ lệch chuẩn, tính trung bình cho day_off, day_study và isSkipped
         duration_list = []
-        activities_total = []
-        print(data)
+        activities_list = []
+        timeSpent_list = []
+        now = datetime.now()
+        month_now = calendar.monthrange(now.year, now.month)[1]
         session_info =  data.get('session', {})
         session = session_info.get('session')
-        # duration_by_month = defaultdict(int)
-        for s in session:
-            activities_total.append(s.get('activitiesCount', 0))
+        time_info = data.get('total_time_for_lesson', {})
+        time = time_info.get('time')
+        # print(data)
+        # print("|||")
+        # print(session)
+        # print("||||")
+        # print(time_info)
+        days_off = session_info.get('day_off')
+        attitude = time_info.get('learning_attitude')
+        days_study = attitude.get('total_days_study')
+        percent_time_study = attitude.get('percent_time_study')
+        # skip_lesson = attitude.get('skip')
+        # # duration_by_month = defaultdict(int)
+    
+        for s in session :
+            activities_list.append(s.get('activitiesCount', 0))
             duration_list.append(s.get('duration', 0))
+        for t in time:
+            timeSpent_list.append(t.get('timeSpent', 0))
+        sum_days_study = sum(days_study)
+        avg_days_study = round(np.mean(days_study), 2)
+        std_day_study = round(np.std(days_study), 2)
+        sum_days_off = sum(days_off)
+        avg_days_off = round(np.mean(days_off), 2)
+        std_day_off = round(np.std(days_off), 2)
+        avg_lesson_timespent = round(np.mean(timeSpent_list) / 3600,2)
+        std_lesson_timespent = round(np.std(timeSpent_list) / 3600, 2)
+        avg_duration_session = round(np.mean(duration_list) / 3600, 2)
+        std_duration_session = round(np.std(duration_list) / 3600, 2) 
+        avg_duration_activity = round(np.mean(activities_list), 2)
+        std_duration_activity = round(np.std(activities_list), 2)
+        # avg_skip = round(np.mean(skip_lesson), 2)
+       
+        print(avg_lesson_timespent)
+        # print(std_duration_session)
+        # print(std_duration_activity)
+            
+            
+        
             
         pre_data_user = [
-            data['total_time_for_lesson']['time'][0]['timeSpent'],
-            data['total_time_for_lesson']['time'][0]['isSkipped'],
-            round(np.mean(duration_total), 4),
-            round(np.std(duration_total), 4),
-            round(np.mean(activities_total), 4),
-            round(np.mean(data['session']['day_off']), 4),
-            data['total_time_for_lesson']['learning attitude'][0]['total_days_study'],
-            data['total_time_for_lesson']['learning attitude'][0]['percent_time_study']
-            
+            sum_days_study,
+            avg_days_study,
+            std_day_study,
+            sum_days_off,
+            avg_days_off,
+            std_day_off,
+            avg_lesson_timespent,
+            std_lesson_timespent,
+            avg_duration_session,
+            std_duration_session,
+            avg_duration_activity,
+            std_duration_activity,
+            # avg_skip,
+            percent_time_study
         ]
         
-        return np.array(pre_data_user[:8])
+        print(pre_data_user)
+        
+        return np.array(pre_data_user[:13])
         
     def train(self):
         X_train = []
@@ -1042,20 +1087,40 @@ class RandomForestLearninAttube:
         np.random.seed(42)
         
         samples_per_class = 400
+        """
+        Tổng số ngày học,
+        Số trung bình ngày học,
+        Độ lệch chuẩn ngày học,
+        Tổng số ngày nghỉ,
+        Số trung bình ngày nghỉ,
+        Độ lệch chuẩn ngày nghỉ,
+        Thời gian học trung bình,
+        Độ lệch chuẩn thời gian học,
+        Thời gian phiên học trung bình,
+        Độ lệch chuẩn phiên học,
+        Độ lệch chuẩn số thao tác,
+        số lần skip trung bình,
+        Phần trăm thời gian học ( tổng thời gian học / tổng thời gian dự kiến (thời gian dự kiến hoàn thành video + văn bản))
+        """
         
         for class_id in range(6):  # 5 classes: 0-4
             for i in range(samples_per_class):
                 if class_id == 0:  # Hard_work
                     features = [
-                        np.random.uniform(3000, 6000),  
-                        np.random.choice([0, 1], p=[0.9, 0.1]),  
-                        np.random.uniform(2000, 4000),   
-                        np.random.uniform(200, 800),      
-                        np.random.uniform(8, 15),         
-                        np.random.uniform(0, 1),          
-                        np.random.randint(0, 3),          
-                        np.random.uniform(0.7, 1.0)       
-                    ]
+                        np.random.uniform(28, 30),         
+                        np.random.uniform(0.8, 6.3),         
+                        np.random.uniform(0.5, 1.2),      
+                        np.random.uniform(35, 85),           
+                        np.random.uniform(0.7, 1.6),         
+                        np.random.uniform(0.3, 0.8),        
+                        np.random.uniform(4000, 7200),     
+                        np.random.uniform(500, 1500),        
+                        np.random.uniform(3000, 5000),       
+                        np.random.uniform(300, 800),      
+                        np.random.uniform(2, 5),             
+                        np.random.uniform(0, 0.1),           
+                        np.random.uniform(0.8, 2.0)     
+                        ]
                 elif class_id == 1:
                     features = [
                         np.random.uniform(4000, 7200),  
@@ -1139,68 +1204,63 @@ class RandomForestLearninAttube:
         
         # Evaluate
         y_pred = self.model.predict(X_val_scaled)
-        print("=== Training Complete ===")
-        print(f"Training accuracy: {self.model.score(X_train_scaled, y_train_split):.4f}")
-        print(f"Validation accuracy: {self.model.score(X_val_scaled, y_val):.4f}")
-        print("\n=== Classification Report ===")
-        print(classification_report(y_val, y_pred, 
-                                   target_names=list(self.Learning_attitude.values())))
-        
+      
         self.is_trained = True
         return X_train, y_train
     
     
     def predict(self, data, return_proba=False):
-        """
+        # """
             
-        Returns:
-        --------
-        dict : Dictionary chứa kết quả dự đoán
-            - 'prediction': Class ID được dự đoán
-            - 'attitude': Tên learning attitude
-            - 'confidence': Độ tin cậy của dự đoán
-            - 'probabilities': Xác suất cho mỗi class (nếu return_proba=True)
-        """
+        # Returns:
+        # --------
+        # dict : Dictionary chứa kết quả dự đoán
+        #     - 'prediction': Class ID được dự đoán
+        #     - 'attitude': Tên learning attitude
+        #     - 'confidence': Độ tin cậy của dự đoán
+        #     - 'probabilities': Xác suất cho mỗi class (nếu return_proba=True)
+        # """
         
-        # Kiểm tra model đã được train chưa
-        if not self.is_trained:
-            raise ValueError("Model chưa được train. Hãy gọi train() trước!")
+        # # Kiểm tra model đã được train chưa
+        # if not self.is_trained:
+        #     raise ValueError("Model chưa được train. Hãy gọi train() trước!")
         
-        # Extract features nếu input là dict
-        if isinstance(data, dict):
-            features = self.extract_features_lesson(data)
-        elif isinstance(data, (np.ndarray, list)):
-            features = np.array(data)
-            if features.shape[-1] != 8:
-                raise ValueError(f"Expected 8 features, got {features.shape[-1]}")
-        else:
-            raise TypeError("Data must be dict or numpy array")
+        # # Extract features nếu input là dict
+        # if isinstance(data, dict):
+        #     features = self.extract_features_lesson(data)
+        # elif isinstance(data, (np.ndarray, list)):
+        #     features = np.array(data)
+        #     if features.shape[-1] != 8:
+        #         raise ValueError(f"Expected 8 features, got {features.shape[-1]}")
+        # else:
+        #     raise TypeError("Data must be dict or numpy array")
         
-        # Reshape nếu cần
-        if features.ndim == 1:
-            features = features.reshape(1, -1)
+        # # Reshape nếu cần
+        # if features.ndim == 1:
+        #     features = features.reshape(1, -1)
         
-        # Scale features
-        features_scaled = self.scaler.transform(features)
+        # # Scale features
+        # features_scaled = self.scaler.transform(features)
         
-        # Predict
-        prediction = self.model.predict(features_scaled)[0]
-        proba = self.model.predict_proba(features_scaled)[0]
+        # # Predict
+        # prediction = self.model.predict(features_scaled)[0]
+        # proba = self.model.predict_proba(features_scaled)[0]
         
-        # Tạo kết quả
-        result = {
-            'prediction': int(prediction),
-            'attitude': self.Learning_attitude[prediction],
-            'confidence': float(np.max(proba)),
-        }
+        # # Tạo kết quả
+        # result = {
+        #     'prediction': int(prediction),
+        #     'attitude': self.Learning_attitude[prediction],
+        #     'confidence': float(np.max(proba)),
+        # }
         
-        if return_proba:
-            result['probabilities'] = {
-                self.Learning_attitude[i]: float(prob) 
-                for i, prob in enumerate(proba)
-            }
+        # if return_proba:
+        #     result['probabilities'] = {
+        #         self.Learning_attitude[i]: float(prob) 
+        #         for i, prob in enumerate(proba)
+        #     }
         
-        return result
+        # return result
+        return True
     
     
             
@@ -1491,15 +1551,15 @@ if __name__ == "__main__":
         learning = Learning_assessment(db_manager)
         tesst = learning.learning_analytics_data("user-student-01", "lesson-html-tags")
         rd = RandomForestLearninAttube()
-        # t = rd.extract_features_lesson(tesst)
+        t = rd.extract_features_lesson(tesst)
         tr = rd.train()
         r = rd.predict(tesst, return_proba = True)
-        print("\n=== Prediction Result ===")
-        print(f"Predicted attitude: {r['attitude']}")
-        print(f"Confidence: {r['confidence']:.2%}")
-        print("\nProbabilities for each class:")
-        for attitude, prob in r['probabilities'].items():
-            print(f"  {attitude}: {prob:.2%}")
+        # print("\n=== Prediction Result ===")
+        # print(f"Predicted attitude: {r['attitude']}")
+        # print(f"Confidence: {r['confidence']:.2%}")
+        # print("\nProbabilities for each class:")
+        # for attitude, prob in r['probabilities'].items():
+        #     print(f"  {attitude}: {prob:.2%}")
         # track = AITrackingDataCollector(db_manager)
         # test = track.collect_comprehensive_data("user-student-01","course-html-css")
         # print(test)
