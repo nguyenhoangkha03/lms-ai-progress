@@ -10,7 +10,10 @@ import json
 from typing import Dict, List, Tuple
 from datetime import datetime
 from collections import defaultdict
+from sklearn.model_selection import GridSearchCV
 import warnings
+import joblib
+import os
 warnings.filterwarnings('ignore')
 
 class DatabaseManager:
@@ -654,7 +657,7 @@ class LearningStrategyAI:
         if not self.is_trained:
             self.train_model()
         
-        # Extract key metrics
+        features = np.array(features, dtype=float).flatten()
         accuracy = features[0]
         # print(features.reshape(1, -1))
         
@@ -686,6 +689,56 @@ class LearningStrategyAI:
                 for i, prob in enumerate(probabilities)
             }
         }
+    
+    def save_model(self, filepath: str):
+        """
+        Lưu model vào file
+        """
+        if not self.is_trained:
+            raise ValueError("Model chưa được train. Hãy gọi train_model() trước!")
+        
+        model_data = {
+            'model': self.model,
+            'scaler': self.scaler,
+            'is_trained': self.is_trained,
+            'strategies': self.STRATEGIES,
+            'model_type': 'LearningStrategyAI'
+        }
+        
+        # Tạo thư mục nếu chưa có
+        os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
+        
+        joblib.dump(model_data, filepath)
+        print(f"✅ Model đã được lưu tại: {filepath}")
+    
+    def load_model(self, filepath: str):
+        """
+        Load model từ file
+        """
+        if not os.path.exists(filepath):
+            raise FileNotFoundError(f"File không tồn tại: {filepath}")
+        
+        model_data = joblib.load(filepath)
+        
+        # Kiểm tra loại model
+        if model_data.get('model_type') != 'LearningStrategyAI':
+            raise ValueError("File không phải của LearningStrategyAI model")
+        
+        self.model = model_data['model']
+        self.scaler = model_data['scaler']
+        self.is_trained = model_data['is_trained']
+        
+        print(f"✅ Model đã được load từ: {filepath}")
+        
+    @classmethod
+    def load_pretrained(cls, filepath: str):
+        """
+        Tạo instance mới và load model
+        """
+        instance = cls()
+        instance.load_model(filepath)
+        return instance
+    
 class ContentRecommender:
     def recommend_lessons(self, db_manager: DatabaseManager, strategy: str, user_performance: Dict) -> List[Dict]:
         recommendations = []
@@ -867,13 +920,14 @@ class Learning_assessment:
         self.db = db
         
     def learning_analytics_data(self, user_id: str, lesson_id: str):
+        now = datetime.now()
         data = {
             'user_id': user_id,
             'lesson_id': lesson_id,
             'collected_at': datetime.now().isoformat(),
             
-            'session' : self._get_session(user_id),
-            # 'activity': self._get_activity(user_id)
+            'session' : self._get_session(user_id, now),
+            'session_analytics' : self._get_session_analytics(user_id, now),
             'total_time_for_lesson' : self._get_time_study_lesson(user_id),
             
             
@@ -882,11 +936,23 @@ class Learning_assessment:
         # print(data)
         return data
     
-    def _get_session(self, user_id: str):
-        now = datetime.now()
+    def _get_session_analytics(self, user_id: str, now):
+        where_clause = f""" 
+        WHERE lea.studentId = '{user_id}' AND MONTH(lea.date) = '{now.month} ORDER BY MONTH(lea.date) ASC'
+        """
+        learning_analytics = self.db.select("learning_analytics lea", "lea.totalTimeSpent, lea.readingTime, lea.videoWatchTime, lea.date", where_clause)
+        days_gap_study = self._analytics_days_gap_study(learning_analytics)
+        
+        return {
+            'learning_analytics' : learning_analytics,
+            'days_study': len(learning_analytics),
+            'day_gap_study': days_gap_study
+        }
+    
+    def _get_session(self, user_id: str, now):
         where_clause = f"""
             WHERE ls.studentId = '{user_id}' AND ls.status = 'completed' AND MONTH(ls.startTime) = '{now.month}'
-            ORDER BY ls.startTime ASC
+            ORDER BY ls.startTime ASC   
             """
         session = self.db.select("learning_sessions ls", "DISTINCT ls.startTime, ls.endTime, ls.status, ls.duration, ls.activitiesCount",where_clause)
         # session_time = self.db.select("learning_sessions ls", "SUM(ls.duration) AS total_duration_session, ROUND(AVG(ls.duration), 2) AS avg_duration_session, ROUND(STDDEV_POP(ls.duration), 2) AS std_duration_session ", where_clause)
@@ -916,7 +982,7 @@ class Learning_assessment:
     
     def _get_time_study_lesson(self, user_id : str):
         now = datetime.now()
-        where_clause = f"JOIN lessons ls ON ls.id = lsp.lessonId WHERE lsp.studentId = '{user_id}' AND lsp.status = 'in_progress' AND MONTH(lsp.lastAccessedAt) = '{now.month}' ORDER BY lsp.lastAccessedAt DESC"
+        where_clause = f"JOIN lessons ls ON ls.id = lsp.lessonId WHERE lsp.studentId = '{user_id}' AND lsp.status = 'in_progress' ORDER BY lsp.lastAccessedAt DESC"
         
         lesson_progress = self.db.select("lesson_progress lsp", "DISTINCT ls.videoDuration,ls.estimatedDuration, lsp.timeSpent, lsp.progressPercentage, lsp.firstAccessedAt, lsp.lastAccessedAt, lsp.status", where_clause)
         # lesson_progress_time = self.db.select("lesson_progress lsp", "ROUND(SUM(lsp.timeSpent),2) AS total_time_study, ROUND(AVG(lsp.timeSpent),2) AS avg_time_study, ROUND(STDDEV_POP(lsp.timeSpent), 2) AS std_time_study", where_clause)
@@ -930,6 +996,7 @@ class Learning_assessment:
             'learning_attitude': analysis_time
         }
         
+        
     def _analysis_session(self, session): # 0,1, 2
         day_gap = []
         # print(session)
@@ -942,7 +1009,13 @@ class Learning_assessment:
             gap_days = (current.date() - temp.date()).days
             # print(gap_days)
             day_gap.append(gap_days)
-            # print(day_gap)
+        #     print("t")
+        #     print("|")
+        #     print(temp)
+        #     print("|")
+        #     print(current)
+            
+        # print(day_gap)
             
         return day_gap
     
@@ -951,7 +1024,8 @@ class Learning_assessment:
         time_study = []
         estimatedDuration = []
         videoDuration = []
-        days_study = []
+        # print(time_study_list)
+        # days_study = []
         # print(time_study_list)
         # if time_study_list[0]['lastAccessedAt'] and time_study_list[0]['firstAccessedAt']:
         #     days_study = max((time_study_list[0]['lastAccessedAt'].date() - time_study_list[0]['firstAccessedAt'].date()).days, 1)
@@ -964,9 +1038,6 @@ class Learning_assessment:
             start = record.get('firstAccessedAt', [])
             if not last:
                 continue
-            if start and last:
-                study_day = max((last.date() - start.date()).days, 1)
-                days_study.append(study_day)
             estimatedDuration.append(est_min * 60)  # đổi phút → giây
             videoDuration.append(vid_sec)
             time_study.append(time_for_ls)
@@ -978,29 +1049,37 @@ class Learning_assessment:
 
         # print(days_study)
         results = {
-            'total_days_study': days_study,
             'percent_time_study': avg_sec_per_day,
         }
         # print(videoDuration)
 
         return results
+    def _analytics_days_gap_study(self, learning_analytics):
+        days_gap_study_list = []
+        for i in range(1, len(learning_analytics)):
+            pre_day = learning_analytics[i - 1]['date']
+            next_day = learning_analytics[i]['date']
+            # print(next_day)
+            days_gap_study = (next_day - pre_day).days
+            days_gap_study_list.append(days_gap_study)
+            
+        return days_gap_study_list
         
 class RandomForestLearninAttube:
     Learning_attitude = {
         0 : 'Hard_work',
-        1 : 'Good_student',
-        2 : 'Distraction',
-        3 : 'Lazy',
-        4 : 'Give_up',
-        5 : 'Cramming'
+        1 : 'Distraction',
+        2 : 'Lazy',
+        3 : 'Give_up',
+        4 : 'Cramming'
     }
     
     def __init__(self):
         
         self.model = RandomForestClassifier(
-            n_estimators=200,        # Tăng từ 100
-            max_depth=10,            # Tăng từ 8
-            min_samples_split=3,     # Giảm từ 5
+            n_estimators= 100,        # Tăng từ 100
+            max_depth=8,            # Tăng từ 8
+            min_samples_split=5,     # Giảm từ 5
             min_samples_leaf=2,      # Thêm
             class_weight='balanced', # Thêm để handle imbalanced data
             random_state=42,
@@ -1014,175 +1093,346 @@ class RandomForestLearninAttube:
         #Tính tổng, độ lệch chuẩn, tính trung bình cho day_off, day_study và isSkipped
         duration_list = []
         activities_list = []
-        timeSpent_list = []
+        timeSpentInMonth_list = []
+        # timeSpent_list = []
         now = datetime.now()
         month_now = calendar.monthrange(now.year, now.month)[1]
         session_info =  data.get('session', {})
         session = session_info.get('session')
         time_info = data.get('total_time_for_lesson', {})
-        time = time_info.get('time')
+        session_analytics = data.get('session_analytics')
+        time_study_in_day = session_analytics.get('learning_analytics')
+        days_study = session_analytics.get('days_study')
+        days_gap_study = session_analytics.get('day_gap_study')
+        days_off = session_info.get('day_off')
+        # print(days_off)
+        # time = time_info.get('time')
+        # print(time)
         # print(data)
+        # print("||")
+        # print(session_analytics)
         # print("|||")
         # print(session)
         # print("||||")
         # print(time_info)
-        days_off = session_info.get('day_off')
+        # days_off = session_info.get('day_off')
         attitude = time_info.get('learning_attitude')
-        days_study = attitude.get('total_days_study')
         percent_time_study = attitude.get('percent_time_study')
-        # skip_lesson = attitude.get('skip')
         # # duration_by_month = defaultdict(int)
-    
-        for s in session :
-            activities_list.append(s.get('activitiesCount', 0))
-            duration_list.append(s.get('duration', 0))
-        for t in time:
-            timeSpent_list.append(t.get('timeSpent', 0))
-        sum_days_study = sum(days_study)
-        avg_days_study = round(np.mean(days_study), 2)
-        std_day_study = round(np.std(days_study), 2)
-        sum_days_off = sum(days_off)
-        avg_days_off = round(np.mean(days_off), 2)
-        std_day_off = round(np.std(days_off), 2)
-        avg_lesson_timespent = round(np.mean(timeSpent_list) / 3600,2)
-        std_lesson_timespent = round(np.std(timeSpent_list) / 3600, 2)
-        avg_duration_session = round(np.mean(duration_list) / 3600, 2)
-        std_duration_session = round(np.std(duration_list) / 3600, 2) 
-        avg_duration_activity = round(np.mean(activities_list), 2)
-        std_duration_activity = round(np.std(activities_list), 2)
-        # avg_skip = round(np.mean(skip_lesson), 2)
-       
-        print(avg_lesson_timespent)
-        # print(std_duration_session)
-        # print(std_duration_activity)
-            
-            
+        for t in time_study_in_day:
+            timeSpentInMonth_list.append(t.get('totalTimeSpent'))
+        # print(timeSpentInMonth_list)
+        
+        for s in session:
+            # print(s)
+            activities_list.append(s.get('activitiesCount'))
+            duration_list.append(s.get('duration'))
+        # print(duration_list)
+        # print(activities_list)
+        # print(days_off)
+        
+        
         
             
         pre_data_user = [
-            sum_days_study,
-            avg_days_study,
-            std_day_study,
-            sum_days_off,
-            avg_days_off,
-            std_day_off,
-            avg_lesson_timespent,
-            std_lesson_timespent,
-            avg_duration_session,
-            std_duration_session,
-            avg_duration_activity,
-            std_duration_activity,
-            # avg_skip,
+            days_study,
+            round((days_study / month_now), 2),
+            round(np.std(days_gap_study), 2),
+            round(np.mean(days_off), 2),
+            round(np.std(days_off), 2),
+            round(sum(timeSpentInMonth_list), 2),
+            round(np.mean(timeSpentInMonth_list),2),
+            round(np.std(timeSpentInMonth_list), 2),
+            round(np.mean(duration_list), 2),
+            round(np.std(duration_list), 2),
+            round(np.mean(activities_list), 2),
+            round(np.std(activities_list), 2),
             percent_time_study
         ]
         
-        print(pre_data_user)
+        # print(pre_data_user)
         
         return np.array(pre_data_user[:13])
-        
+    
+    
+    
     def train(self):
         X_train = []
         y_train = []
         
         np.random.seed(42)
         
-        samples_per_class = 400
+        samples_per_class = 100
         """
-        Tổng số ngày học,
-        Số trung bình ngày học,
-        Độ lệch chuẩn ngày học,
-        Tổng số ngày nghỉ,
-        Số trung bình ngày nghỉ,
-        Độ lệch chuẩn ngày nghỉ,
-        Thời gian học trung bình,
-        Độ lệch chuẩn thời gian học,
-        Thời gian phiên học trung bình,
-        Độ lệch chuẩn phiên học,
-        Độ lệch chuẩn số thao tác,
-        số lần skip trung bình,
-        Phần trăm thời gian học ( tổng thời gian học / tổng thời gian dự kiến (thời gian dự kiến hoàn thành video + văn bản))
+        Features:
+        1. Tổng số ngày học (sum_days_study)
+        2. Số trung bình ngày học (mean_days_study)
+        3. Độ lệch chuẩn khoảng cách ngày học (std_days_study) - từ gaps
+        4. Trung bình khoảng cách giữa các phiên đăng nhập (mean_gap_session) - từ gaps_sessions
+        5. Độ lệch chuẩn khoảng cách phiên đăng nhập (std_days_gap_off) - từ gaps_sessions
+        6. Tổng thời gian học trong tháng (total_timespent)
+        7. Thời gian học trung bình (mean_timespent)
+        8. Độ lệch chuẩn thời gian học (std_timespent)
+        9. Thời gian phiên học trung bình (mean_duration)
+        10. Độ lệch chuẩn thời gian phiên (std_duration)
+        11. Trung bình thao tác trên mỗi phiên (men_activities)
+        12. Độ lệch chuẩn số thao tác (std_activities)
+        13. Phần trăm thời gian học (percent_time_study)
         """
         
-        for class_id in range(6):  # 5 classes: 0-4
+        for class_id in range(5):  # 5 classes: 0-4
             for i in range(samples_per_class):
+                
                 if class_id == 0:  # Hard_work
-                    features = [
-                        np.random.uniform(28, 30),         
-                        np.random.uniform(0.8, 6.3),         
-                        np.random.uniform(0.5, 1.2),      
-                        np.random.uniform(35, 85),           
-                        np.random.uniform(0.7, 1.6),         
-                        np.random.uniform(0.3, 0.8),        
-                        np.random.uniform(4000, 7200),     
-                        np.random.uniform(500, 1500),        
-                        np.random.uniform(3000, 5000),       
-                        np.random.uniform(300, 800),      
-                        np.random.uniform(2, 5),             
-                        np.random.uniform(0, 0.1),           
-                        np.random.uniform(0.8, 2.0)     
-                        ]
-                elif class_id == 1:
-                    features = [
-                        np.random.uniform(4000, 7200),  
-                        np.random.choice([0, 1], p=[0.8, 0.2]),  
-                        np.random.uniform(2200, 4500),   
-                        np.random.uniform(200, 800),      
-                        np.random.uniform(8, 15),         
-                        np.random.uniform(0, 1),          
-                        np.random.randint(0, 3),          
-                        np.random.uniform(0.7, 1.0)       
-                    ]
-                elif class_id == 2:  # Distraction
-                    features = [
-                        np.random.uniform(1000, 5000),    
-                        np.random.choice([0, 1], p=[0.3, 0.7]),  
-                        np.random.uniform(500, 2000),     
-                        np.random.uniform(500, 1500),     
-                        np.random.uniform(2, 6),         
-                        np.random.uniform(1, 3),          
-                        np.random.randint(5, 15),         
-                        np.random.uniform(0.3, 0.7)       
-                    ]
+              
+                    sum_days_study = np.random.randint(18, 28) 
+                    mean_days_study = round(sum_days_study / 30, 2)
                     
-                elif class_id == 3:  # Lazy
                    
-                    features = [
-                        np.random.uniform(300, 1500),     
-                        np.random.choice([0, 1], p=[0.2, 0.8]),  
-                        np.random.uniform(200, 1000),     
-                        np.random.uniform(100, 500),      
-                        np.random.uniform(1, 3),          
-                        np.random.uniform(2, 5),          
-                        np.random.randint(15, 25),        
-                        np.random.uniform(0.1, 0.4)       
-                    ]
+                    study_dates = np.sort(np.random.choice(range(1, 31), size=sum_days_study, replace=False))
+                    gaps = np.diff(study_dates) 
+                    std_days_study = round(np.std(gaps) if len(gaps) > 0 else 0, 2)
                     
-                elif class_id == 4:  # Give_up
-                    if np.random.rand() < 0.5:
-                        percent_time_study = np.random.uniform(0.0, 0.2)
+                   
+                    extra_login_days = np.random.randint(0, 3) 
+                    extra_dates = np.random.choice([d for d in range(1, 31) if d not in study_dates], 
+                                                size=min(extra_login_days, 30-sum_days_study), replace=False)
+                    login_dates = np.sort(np.concatenate([study_dates, extra_dates]))
+                    gaps_sessions = np.diff(login_dates)
+                    mean_gap_session = round(np.mean(gaps_sessions) if len(gaps_sessions) > 0 else 1, 2)
+                    std_days_gap_off = round(np.std(gaps_sessions) if len(gaps_sessions) > 0 else 0.5, 2)
+                    
+               
+                    timespent = np.random.normal(5400, 900, size=sum_days_study)
+                    timespent = np.clip(timespent, 3600, 7200).astype(int)
+                    total_timespent = sum(timespent)
+                    mean_timespent = round(np.mean(timespent), 2)
+                    std_timespent = round(np.std(timespent), 2)
+                    
+                   
+                    duration = timespent + np.random.randint(0, 1800, size=len(timespent))
+                    mean_duration = round(np.mean(duration), 2)
+                    std_duration = round(np.std(duration), 2)
+                    
+                    
+                    activities = np.random.randint(3, 7, size=sum_days_study)
+                    men_activities = round(np.mean(activities), 2)
+                    std_activities = round(np.std(activities), 2)
+                    
+                  
+                    estimated_total = 720 * sum_days_study 
+                    percent_time_study = round((total_timespent / estimated_total) * 100, 2)
+                    
+                elif class_id == 1:  # Distraction 
+                    sum_days_study = np.random.randint(10, 20)  
+                    mean_days_study = round(sum_days_study / 30, 2)
+                   
+                    study_dates = np.sort(np.random.choice(range(1, 31), size=sum_days_study, replace=False))
+                    gaps = np.diff(study_dates)
+                    std_days_study = round(np.std(gaps) if len(gaps) > 0 else 0, 2)
+                    
+                    
+                    extra_login_days = np.random.randint(5, 10)
+                    extra_dates = np.random.choice([d for d in range(1, 31) if d not in study_dates], 
+                                                size=min(extra_login_days, 30-sum_days_study), replace=False)
+                    login_dates = np.sort(np.concatenate([study_dates, extra_dates]))
+                    gaps_sessions = np.diff(login_dates)
+                    mean_gap_session = round(np.mean(gaps_sessions) if len(gaps_sessions) > 0 else 1, 2)
+                    std_days_gap_off = round(np.std(gaps_sessions) if len(gaps_sessions) > 0 else 1, 2)
+                    
+                   
+                    timespent = np.random.normal(2400, 800, size=sum_days_study)
+                    timespent = np.clip(timespent, 600, 4500).astype(int)
+                    total_timespent = sum(timespent)
+                    mean_timespent = round(np.mean(timespent), 2)
+                    std_timespent = round(np.std(timespent) * 1.5, 2)  
+                    
+                 
+                    duration = timespent * np.random.uniform(2, 4, size=len(timespent))
+                    mean_duration = round(np.mean(duration), 2)
+                    std_duration = round(np.std(duration), 2)
+                    
+                    
+                    activities = np.random.randint(6, 15, size=sum_days_study)
+                    men_activities = round(np.mean(activities), 2)
+                    std_activities = round(np.std(activities), 2)
+                    
+                    estimated_total = 720 * sum_days_study
+                    percent_time_study = round((total_timespent / estimated_total) * 100, 2)
+                    
+                elif class_id == 2:  
+                    sum_days_study = np.random.randint(3, 10) 
+                    mean_days_study = round(sum_days_study / 30, 2)
+                    
+                   
+                    study_dates = np.sort(np.random.choice(range(1, 31), size=sum_days_study, replace=False))
+                    gaps = np.diff(study_dates) if len(study_dates) > 1 else np.array([15])
+                    std_days_study = round(np.std(gaps), 2)
+                    
+                 
+                    extra_login_days = np.random.randint(0, 2)
+                    if 30-sum_days_study > 0 and extra_login_days > 0:
+                        extra_dates = np.random.choice([d for d in range(1, 31) if d not in study_dates], 
+                                                    size=min(extra_login_days, 30-sum_days_study), replace=False)
+                        login_dates = np.sort(np.concatenate([study_dates, extra_dates]))
                     else:
-                        percent_time_study = np.random.uniform(3.1, 5.0)
-                    features = [
-                        np.random.uniform(0, 600),        # timeSpent: cực thấp
-                        np.random.choice([0, 1], p=[0.2, 0.8]),  # isSkipped: rất hay skip
-                        np.random.uniform(0, 500),        # mean_duration: cực thấp
-                        np.random.uniform(0, 200),        # std_duration: rất thấp
-                        np.random.uniform(0, 2),          # mean_activities: cực ít
-                        np.random.uniform(4, 7),          # mean_day_off: rất nhiều
-                        np.random.randint(20, 30),        # total_days_off: rất nhiều
-                        percent_time_study        # percent_time_study: cực thấp
-                    ]
+                        login_dates = study_dates
+                    gaps_sessions = np.diff(login_dates) if len(login_dates) > 1 else np.array([15])
+                    mean_gap_session = round(np.mean(gaps_sessions), 2)
+                    std_days_gap_off = round(np.std(gaps_sessions), 2)
                     
-                    features = [
-                        np.random.uniform(6000, 10000),    
-                        np.random.choice([0, 1], p=[0.95, 0.05]),
-                        np.random.uniform(5000, 7200),     
-                        np.random.uniform(100, 400),      
-                        np.random.uniform(10, 20),         
-                        np.random.uniform(3, 6),         
-                        np.random.randint(10, 20),        
-                        np.random.uniform(2.0, 3.5)       
-                    ]
+                    
+                    timespent = np.random.randint(300, 1200, size=sum_days_study)
+                    total_timespent = sum(timespent)
+                    mean_timespent = round(np.mean(timespent), 2)
+                    std_timespent = round(np.std(timespent), 2)
+                    
+                    duration = timespent + np.random.randint(1000, 3000, size=len(timespent))
+                    mean_duration = round(np.mean(duration), 2)
+                    std_duration = round(np.std(duration), 2)
+                    
+                    
+                    activities = np.random.randint(1, 4, size=sum_days_study)
+                    men_activities = round(np.mean(activities), 2)
+                    std_activities = round(np.std(activities), 2)
+                    
+                    estimated_total = 720 * max(sum_days_study, 5)
+                    percent_time_study = round((total_timespent / estimated_total) * 100, 2)
+                    
+                elif class_id == 3:  # Give_up 
+                    give_up_type = np.random.choice(['early', 'gradual'], p=[0.4, 0.6])
+                    
+                    if give_up_type == 'early':  
+                        sum_days_study = np.random.randint(2, 6)
+                        mean_days_study = round(sum_days_study / 30, 2)
+                        
+                        
+                        study_dates = np.sort(np.random.choice(range(1, 11), size=sum_days_study, replace=False))
+                        
+                     
+                        extra_login_days = np.random.randint(2, 5)
+                        extra_dates = np.random.choice(range(1, 15), size=min(extra_login_days, 15-sum_days_study), replace=False)
+                        login_dates = np.sort(np.unique(np.concatenate([study_dates, extra_dates])))
+                        
+             
+                        timespent = np.array([np.random.randint(600-i*100, 1200-i*150) 
+                                            for i in range(sum_days_study)])
+                        timespent = np.clip(timespent, 60, 3600).astype(int)
+                        activities = np.random.randint(1, 3, size=sum_days_study)
+                        
+                    else:  
+                        sum_days_study = np.random.randint(8, 15)
+                        mean_days_study = round(sum_days_study / 30, 2)
+                        
+                    
+                        num_early = int(sum_days_study * 0.7)
+                        num_late = sum_days_study - num_early
+                        
+                        early_dates = np.random.choice(range(1, 15), size=num_early, replace=False)
+                        late_dates = np.random.choice(range(20, 31), size=num_late, replace=False)
+                        study_dates = np.sort(np.concatenate([early_dates, late_dates]))
+                        
+                        extra_login_days = np.random.randint(3, 8)
+                        extra_dates = np.random.choice(range(1, 31), size=min(extra_login_days, 31-sum_days_study), replace=False)
+                        login_dates = np.sort(np.unique(np.concatenate([study_dates, extra_dates])))
+                        
+                      
+                        early_time = np.random.randint(3000, 5400, size=num_early)
+                        late_time = np.random.randint(300, 1200, size=num_late)
+                        timespent = np.concatenate([early_time, late_time])
+                        
+                        early_act = np.random.randint(4, 7, size=num_early)
+                        late_act = np.random.randint(1, 3, size=num_late)
+                        activities = np.concatenate([early_act, late_act])
+                    
+                   
+                    gaps = np.diff(study_dates) if len(study_dates) > 1 else np.array([20])
+                    std_days_study = round(np.std(gaps), 2)
+                    
+                    gaps_sessions = np.diff(login_dates) if len(login_dates) > 1 else np.array([10])
+                    mean_gap_session = round(np.mean(gaps_sessions), 2)
+                    std_days_gap_off = round(np.std(gaps_sessions), 2)
+                    
+                    total_timespent = sum(timespent)
+                    mean_timespent = round(np.mean(timespent), 2)
+                    std_timespent = round(np.std(timespent), 2)
+                    
+                    duration = timespent * np.random.uniform(1.5, 3, size=len(timespent))
+                    mean_duration = round(np.mean(duration), 2)
+                    std_duration = round(np.std(duration), 2)
+                    
+                    men_activities = round(np.mean(activities), 2)
+                    std_activities = round(np.std(activities), 2)
+                    
+                    estimated_total = 720 * 10
+                    percent_time_study = round((total_timespent / estimated_total) * 100, 2)
+                    
+                else:  #Cramming
+                    sum_days_study = np.random.randint(5, 10)
+                    mean_days_study = round(sum_days_study / 30, 2)
+                    
+               
+                    early_count = int(sum_days_study * 0.2)
+                    late_count = sum_days_study - early_count
+                    
+                    early_dates = np.random.choice(range(1, 20), size=early_count, replace=False)
+                    late_dates = np.random.choice(range(20, 31), size=late_count, replace=False)
+                    study_dates = np.sort(np.concatenate([early_dates, late_dates]))
+             
+                    extra_login_days = np.random.randint(2, 5)
+             
+                    extra_dates = np.random.choice(range(18, 31), size=min(extra_login_days, 31-sum_days_study), replace=False)
+                    login_dates = np.sort(np.unique(np.concatenate([study_dates, extra_dates])))
+                    
+                    gaps = np.diff(study_dates)
+                    std_days_study = round(np.std(gaps) if len(gaps) > 0 else 0, 2)
+                    
+                    gaps_sessions = np.diff(login_dates)
+                    mean_gap_session = round(np.mean(gaps_sessions) if len(gaps_sessions) > 0 else 1, 2)
+                    std_days_gap_off = round(np.std(gaps_sessions) * 2, 2)  # High variance
+                    
+             
+                    early_time = np.random.randint(1800, 3600, size=early_count)
+                    late_time = np.random.randint(10800, 21600, size=late_count)  # 3-6 giờ
+                    timespent = np.concatenate([early_time, late_time])
+                    
+                    total_timespent = sum(timespent)
+                    mean_timespent = round(np.mean(timespent), 2)
+                    std_timespent = round(np.std(timespent), 2)
+                    
+                    duration = timespent + np.random.randint(0, 1800, size=len(timespent))
+                    mean_duration = round(np.mean(duration), 2)
+                    std_duration = round(np.std(duration), 2)
+                    
+                    early_act = np.random.randint(3, 5, size=early_count)
+                    late_act = np.random.randint(10, 20, size=late_count)
+                    activities = np.concatenate([early_act, late_act])
+                    men_activities = round(np.mean(activities), 2)
+                    std_activities = round(np.std(activities), 2)
+                    
+                    estimated_total = 720 * sum_days_study
+                    percent_time_study = round((total_timespent / estimated_total) * 100, 2)
+                
+                
+                features = [
+                    sum_days_study,           # 1. Tổng số ngày học
+                    mean_days_study,          # 2. Trung bình ngày học
+                    std_days_study,           # 3. Std của gaps (ngày học)
+                    mean_gap_session,         # 4. Mean của gaps_sessions (ngày đăng nhập)
+                    std_days_gap_off,         # 5. Std của gaps_sessions
+                    total_timespent,          # 6. Tổng thời gian học
+                    mean_timespent,           # 7. Thời gian học trung bình
+                    std_timespent,            # 8. Std thời gian học
+                    mean_duration,            # 9. Duration trung bình
+                    std_duration,             # 10. Std duration
+                    men_activities,           # 11. Activities trung bình
+                    std_activities,           # 12. Std activities
+                    percent_time_study        # 13. Phần trăm thời gian học
+                ]
+                
+                # Add small noise
+                features[5] *= np.random.uniform(0.95, 1.05)
+                features[10] *= np.random.uniform(0.9, 1.1)
                 
                 X_train.append(features)
                 y_train.append(class_id)
@@ -1199,14 +1449,83 @@ class RandomForestLearninAttube:
         X_train_scaled = self.scaler.fit_transform(X_train_split)
         X_val_scaled = self.scaler.transform(X_val)
         
-        # Train model
-        self.model.fit(X_train_scaled, y_train_split)
+        
+        param_grid = {
+            'n_estimators': [100, 200, 300],
+            'max_depth': [10, 20, 30, None],
+            'min_samples_split': [2, 5, 10],
+            'min_samples_leaf': [1, 2, 4]
+        }
+        
+        grid_search = GridSearchCV(
+            RandomForestClassifier(random_state=42),
+            param_grid,
+            cv=5,
+            scoring='accuracy',
+            n_jobs=-1
+        )
+        
+        grid_search.fit(X_train_scaled, y_train_split)
+        self.model = grid_search.best_estimator_
         
         # Evaluate
         y_pred = self.model.predict(X_val_scaled)
-      
+        
+        labels = sorted(set(y_val))
+        target_names = [self.Learning_attitude[i] for i in labels]
+        
+        print("Best parameters:", grid_search.best_params_)
+        print("\nClassification Report:")
+        print(classification_report(
+            y_val, y_pred, target_names=target_names, digits=2
+        ))
+        
+        # Feature importance
+        feature_names = [
+            'sum_days_study', 'mean_days_study', 'std_days_study',
+            'mean_gap_session', 'std_days_gap_off', 'total_timespent',
+            'mean_timespent', 'std_timespent', 'mean_duration',
+            'std_duration', 'men_activities', 'std_activities',
+            'percent_time_study'
+        ]
+        
+        importances = self.model.feature_importances_
+        indices = np.argsort(importances)[::-1]
+        
+        print("\nFeature Importance:")
+        for i in range(len(feature_names)):
+            print(f"{i+1}. {feature_names[indices[i]]}: {importances[indices[i]]:.4f}")
+        
         self.is_trained = True
         return X_train, y_train
+
+    # Helper function để tính percent_time_study cho real data
+    def calculate_percent_time_study(total_time_spent, estimated_duration_minutes, video_duration_seconds=None):
+        """
+        Calculate percent_time_study consistently
+        
+        Args:
+            total_time_spent: Total time spent in seconds
+            estimated_duration_minutes: Estimated duration in minutes
+            video_duration_seconds: Video duration in seconds (optional)
+        
+        Returns:
+            percent_time_study as a percentage
+        """
+        # Convert estimated duration to seconds
+        estimated_total = estimated_duration_minutes * 60
+        
+        # Add video duration if available
+        if video_duration_seconds:
+            estimated_total += video_duration_seconds
+        
+        # Avoid division by zero
+        if estimated_total == 0:
+            return 0
+        
+        # Calculate percentage
+        return round((total_time_spent / estimated_total) * 100, 2)
+    
     
     
     def predict(self, data, return_proba=False):
@@ -1222,45 +1541,197 @@ class RandomForestLearninAttube:
         # """
         
         # # Kiểm tra model đã được train chưa
-        # if not self.is_trained:
-        #     raise ValueError("Model chưa được train. Hãy gọi train() trước!")
+        if not self.is_trained:
+            raise ValueError("Model chưa được train. Hãy gọi train() trước!")
         
         # # Extract features nếu input là dict
-        # if isinstance(data, dict):
-        #     features = self.extract_features_lesson(data)
-        # elif isinstance(data, (np.ndarray, list)):
-        #     features = np.array(data)
-        #     if features.shape[-1] != 8:
-        #         raise ValueError(f"Expected 8 features, got {features.shape[-1]}")
-        # else:
-        #     raise TypeError("Data must be dict or numpy array")
+        if isinstance(data, dict):
+            features = self.extract_features_lesson(data)
+        elif isinstance(data, (np.ndarray, list)):
+            features = np.array(data)
+            if features.shape[-1] != 8:
+                raise ValueError(f"Expected 8 features, got {features.shape[-1]}")
+        else:
+            raise TypeError("Data must be dict or numpy array")
         
         # # Reshape nếu cần
-        # if features.ndim == 1:
-        #     features = features.reshape(1, -1)
+        if features.ndim == 1:
+            features = features.reshape(1, -1)
         
         # # Scale features
-        # features_scaled = self.scaler.transform(features)
+        features_scaled = self.scaler.transform(features)
         
         # # Predict
-        # prediction = self.model.predict(features_scaled)[0]
-        # proba = self.model.predict_proba(features_scaled)[0]
+        prediction = self.model.predict(features_scaled)[0]
+        proba = self.model.predict_proba(features_scaled)[0]
         
         # # Tạo kết quả
-        # result = {
-        #     'prediction': int(prediction),
-        #     'attitude': self.Learning_attitude[prediction],
-        #     'confidence': float(np.max(proba)),
-        # }
+        result = {
+            'prediction': int(prediction),
+            'attitude': self.Learning_attitude[prediction],
+            'confidence': float(np.max(proba)),
+        }
         
-        # if return_proba:
-        #     result['probabilities'] = {
-        #         self.Learning_attitude[i]: float(prob) 
-        #         for i, prob in enumerate(proba)
-        #     }
+        if return_proba:
+            result['probabilities'] = {
+                self.Learning_attitude[i]: float(prob) 
+                for i, prob in enumerate(proba)
+            }
         
-        # return result
-        return True
+        
+        return result
+    
+    def save_model(self, filepath: str):
+        """
+        Lưu RandomForestLearninAttube model vào file
+        """
+        if not self.is_trained:
+            raise ValueError("Model chưa được train. Hãy gọi train() trước!")
+        
+        model_data = {
+            'model': self.model,
+            'scaler': self.scaler,
+            'is_trained': self.is_trained,
+            'learning_attitude': self.Learning_attitude,
+            'model_type': 'RandomForestLearninAttube'
+        }
+        
+        # Tạo thư mục nếu chưa có
+        os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
+        
+        joblib.dump(model_data, filepath)
+        print(f"✅ RandomForestLearninAttube model đã được lưu tại: {filepath}")
+    
+    def load_model(self, filepath: str):
+        """
+        Load RandomForestLearninAttube model từ file
+        """
+        if not os.path.exists(filepath):
+            raise FileNotFoundError(f"File không tồn tại: {filepath}")
+        
+        model_data = joblib.load(filepath)
+        
+        # Kiểm tra loại model
+        if model_data.get('model_type') != 'RandomForestLearninAttube':
+            raise ValueError("File không phải của RandomForestLearninAttube model")
+        
+        self.model = model_data['model']
+        self.scaler = model_data['scaler']
+        self.is_trained = model_data['is_trained']
+        
+        print(f"✅ RandomForestLearninAttube model đã được load từ: {filepath}")
+        
+    @classmethod
+    def load_pretrained(cls, filepath: str):
+        """
+        Tạo instance mới và load model
+        """
+        instance = cls()
+        instance.load_model(filepath)
+        return instance
+    
+class ModelManager:
+    """
+    Quản lý việc lưu và load tất cả models trong hệ thống
+    """
+    
+    @staticmethod
+    def save_all_models(learning_strategy_ai: LearningStrategyAI, 
+                       random_forest_attitude: RandomForestLearninAttube,
+                       base_path: str = "./models/"):
+        """
+        Lưu tất cả models vào thư mục
+        """
+        if not os.path.exists(base_path):
+            os.makedirs(base_path, exist_ok=True)
+        
+        # Save LearningStrategyAI
+        if learning_strategy_ai.is_trained:
+            strategy_path = os.path.join(base_path, "learning_strategy_ai.joblib")
+            learning_strategy_ai.save_model(strategy_path)
+        else:
+            print("⚠️ LearningStrategyAI chưa được train, skip save")
+            
+        # Save RandomForestLearninAttube  
+        if random_forest_attitude.is_trained:
+            attitude_path = os.path.join(base_path, "random_forest_attitude.joblib")
+            random_forest_attitude.save_model(attitude_path)
+        else:
+            print("⚠️ RandomForestLearninAttube chưa được train, skip save")
+            
+        print(f"\n🎯 Tất cả models đã được lưu trong: {base_path}")
+    
+    @staticmethod
+    def load_all_models(base_path: str = "./models/") -> tuple:
+        """
+        Load tất cả models từ thư mục
+        
+        Returns:
+            tuple: (LearningStrategyAI, RandomForestLearninAttube)
+        """
+        strategy_path = os.path.join(base_path, "learning_strategy_ai.joblib")
+        attitude_path = os.path.join(base_path, "random_forest_attitude.joblib")
+        
+        learning_strategy_ai = None
+        random_forest_attitude = None
+        
+        # Load LearningStrategyAI
+        if os.path.exists(strategy_path):
+            learning_strategy_ai = LearningStrategyAI.load_pretrained(strategy_path)
+        else:
+            print(f"⚠️ Không tìm thấy file: {strategy_path}")
+            learning_strategy_ai = LearningStrategyAI()
+            
+        # Load RandomForestLearninAttube
+        if os.path.exists(attitude_path):
+            random_forest_attitude = RandomForestLearninAttube.load_pretrained(attitude_path)
+        else:
+            print(f"⚠️ Không tìm thấy file: {attitude_path}")
+            random_forest_attitude = RandomForestLearninAttube()
+            
+        print(f"🔄 Models đã được load từ: {base_path}")
+        return learning_strategy_ai, random_forest_attitude
+    
+    @staticmethod
+    def create_model_info(base_path: str = "./models/") -> dict:
+        """
+        Tạo thông tin về các models đã lưu
+        """
+        info = {
+            'base_path': base_path,
+            'models': {},
+            'created_at': datetime.now().isoformat()
+        }
+        
+        # Check LearningStrategyAI
+        strategy_path = os.path.join(base_path, "learning_strategy_ai.joblib")
+        if os.path.exists(strategy_path):
+            stat = os.stat(strategy_path)
+            info['models']['learning_strategy_ai'] = {
+                'file_path': strategy_path,
+                'file_size_mb': round(stat.st_size / 1024 / 1024, 2),
+                'modified_at': datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                'exists': True
+            }
+        else:
+            info['models']['learning_strategy_ai'] = {'exists': False}
+            
+        # Check RandomForestLearninAttube
+        attitude_path = os.path.join(base_path, "random_forest_attitude.joblib")
+        if os.path.exists(attitude_path):
+            stat = os.stat(attitude_path)
+            info['models']['random_forest_attitude'] = {
+                'file_path': attitude_path,
+                'file_size_mb': round(stat.st_size / 1024 / 1024, 2),
+                'modified_at': datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                'exists': True
+            }
+        else:
+            info['models']['random_forest_attitude'] = {'exists': False}
+            
+        return info
+
+
     
     
             
@@ -1543,49 +2014,84 @@ if __name__ == "__main__":
         # print(f"🔍 test features: {test}")
         # print("🔍 Calling predict_strategy...")
         result = Ai.predict_strategy(test)
-        # print(f"🔍 Raw result: {result}")
+        print(f"🔍 Raw result: {result}")
         # print(f"🔍 Type of result: {type(result)}")
 
         strategy, confidence, sdf = result
         recomment = cm.recommend_lessons(db_manager, strategy, analysis)
         learning = Learning_assessment(db_manager)
-        tesst = learning.learning_analytics_data("user-student-01", "lesson-html-tags")
+        tesst = learning.learning_analytics_data("user-student-14", "lesson-html-tags")
         rd = RandomForestLearninAttube()
         t = rd.extract_features_lesson(tesst)
         tr = rd.train()
         r = rd.predict(tesst, return_proba = True)
-        # print("\n=== Prediction Result ===")
-        # print(f"Predicted attitude: {r['attitude']}")
-        # print(f"Confidence: {r['confidence']:.2%}")
-        # print("\nProbabilities for each class:")
-        # for attitude, prob in r['probabilities'].items():
-        #     print(f"  {attitude}: {prob:.2%}")
+        print("\n=== Prediction Result ===")
+        print(f"Predicted attitude: {r['attitude']}")
+        print(f"Confidence: {r['confidence']:.2%}")
+        print("\nProbabilities for each class:")
+        for attitude, prob in r['probabilities'].items():
+            print(f"  {attitude}: {prob:.2%}")
+        
+     
+        
         # track = AITrackingDataCollector(db_manager)
         # test = track.collect_comprehensive_data("user-student-01","course-html-css")
         # print(test)
         # test = track.collect_comprehensive_data
-        # # cm = ContentRecommender(db_manager)
-        # # cm_def = cm.recommend_lessons()
-        # print("\n📊 KẾT QUẢ PHÂN TÍCH:")
-        # print("Has data:", analysis.get("has_data"))
-        # print("Total questions:", analysis.get("total_questions"))
-        # print("Total time:", analysis.get("total_time"), "s")
-        # print("Correct answers:", analysis.get("correct_answers"))
-        # print("Overall accuracy:", analysis.get("overall_accuracy_percent"), "%")
-        # print("Overall accuracy (decimal):", analysis.get("overall_accuracy"))
-        # print("Reason: ", result[2].get('reason') )
+        # cm = ContentRecommender(db_manager)
+        # cm_def = cm.recommend_lessons()
+        print("\n📊 KẾT QUẢ PHÂN TÍCH:")
+        print("Has data:", analysis.get("has_data"))
+        print("Total questions:", analysis.get("total_questions"))
+        print("Total time:", analysis.get("total_time"), "s")
+        print("Correct answers:", analysis.get("correct_answers"))
+        print("Overall accuracy:", analysis.get("overall_accuracy_percent"), "%")
+        print("Overall accuracy (decimal):", analysis.get("overall_accuracy"))
+        print("Reason: ", result[2].get('reason') )
 
-        # # print("\n📈 Hiệu suất theo danh mục:")
-        # # print(json.dumps(analysis.get("assessment_attempt_performance", {}), indent=2, ensure_ascii=False))
+        print("\n📈 Hiệu suất theo danh mục:")
+        print(json.dumps(analysis.get("assessment_attempt_performance", {}), indent=2, ensure_ascii=False))
 
-        # # print("\n📉 Hiệu suất theo độ khó:")
-        # # print(json.dumps(analysis.get("difficulty_performance", {}), indent=2, ensure_ascii=False))
+        print("\n📉 Hiệu suất theo độ khó:")
+        print(json.dumps(analysis.get("difficulty_performance", {}), indent=2, ensure_ascii=False))
 
-        # # print("\n🚨 Danh mục yếu:")
-        # # print(json.dumps(analysis.get("weak_categories", []), indent=2, ensure_ascii=False))
+        print("\n🚨 Danh mục yếu:")
+        print(json.dumps(analysis.get("weak_categories", []), indent=2, ensure_ascii=False))
 
-        # # print("\n📚 Cơ hội cải thiện:")
-        # # print(json.dumps(analysis.get("avd_categories", []), indent=2, ensure_ascii=False))
+        print("\n📚 Cơ hội cải thiện:")
+        print(json.dumps(analysis.get("avd_categories", []), indent=2, ensure_ascii=False))
+        
+           # ===== MODEL SAVE/LOAD DEMO =====
+        print("\n" + "="*60)
+        print("🔧 DEMO: Model Save/Load Operations")
+        print("="*60)
+        
+        # Save models after training
+        print("\n1. Lưu models sau khi train...")
+        ModelManager.save_all_models(Ai, rd, "./models/")
+        
+        # Show model info  
+        print("\n2. Thông tin models đã lưu:")
+        model_info = ModelManager.create_model_info("./models/")
+        print(json.dumps(model_info, indent=2, ensure_ascii=False, default=str))
+        
+        # Load models from files
+        print("\n3. Load models từ files...")
+        loaded_strategy_ai, loaded_attitude_model = ModelManager.load_all_models("./models/")
+        
+        # Test loaded models
+        print("\n4. Test models đã được load:")
+        
+        # Test LearningStrategyAI
+        loaded_result = loaded_strategy_ai.predict_strategy(test)
+        print(f"   LearningStrategyAI: {loaded_result[0]} (confidence: {loaded_result[1]:.2%})")
+        
+        # Test RandomForestLearninAttube  
+        loaded_attitude_result = loaded_attitude_model.predict(tesst, return_proba=True)
+        print(f"   RandomForestLearninAttube: {loaded_attitude_result['attitude']} (confidence: {loaded_attitude_result['confidence']:.2%})")
+        
+        print("\n✅ Model save/load operations completed successfully!")
+        print("="*60)
         
         # print(f"🔍 strategy after assignment: {strategy}")
         # print(f"🔍 confidence after assignment: {confidence}")

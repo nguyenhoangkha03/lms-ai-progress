@@ -1,6 +1,7 @@
 import pymysql
 import numpy as np
 import pandas as pd
+import calendar
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
@@ -8,7 +9,11 @@ from sklearn.metrics import classification_report
 import json
 from typing import Dict, List, Tuple
 from datetime import datetime
+from collections import defaultdict
+from sklearn.model_selection import GridSearchCV
 import warnings
+import joblib
+import os
 warnings.filterwarnings('ignore')
 
 class DatabaseManager:
@@ -87,7 +92,7 @@ class TestAnalyzer:
         # print("Here")
         
         # print(questions)
-        lesson_process = db.select("lesson_progress lsp","lsp.*", f"WHERE studenId = '{user_id}'" )
+     
 
         where_clause = f"""
         JOIN assessments a ON ast.assessmentId = a.id 
@@ -382,12 +387,12 @@ class LearningStrategyAI:
         self.is_trained = False
         
         # Feature names for interpretability
-        self.feature_names = [
-            'accuracy_norm', 'total_questions_norm', 'hint_usage_rate', 'total_time_norm',
-            'easy_accuracy', 'medium_accuracy', 'hard_accuracy',
-            'weak_categories_norm', 'min_weak_accuracy', 'avg_weak_accuracy',
-            'easy_time_norm', 'medium_time_norm', 'hard_time_norm'
-        ]
+        # self.feature_names = [
+        #     'accuracy_norm', 'total_questions_norm', 'hint_usage_rate', 'total_time_norm',
+        #     'easy_accuracy', 'medium_accuracy', 'hard_accuracy',
+        #     'weak_categories_norm', 'min_weak_accuracy', 'avg_weak_accuracy',
+        #     'easy_time_norm', 'medium_time_norm', 'hard_time_norm'
+        # ]
     
     def extract_features(self, performance_data: Dict) -> np.array:
         """Extract features từ performance analysis - FIXED VERSION"""
@@ -491,7 +496,7 @@ class LearningStrategyAI:
                     np.random.uniform(0.8, 1.0),    # medium_time: 80-100% (chậm với medium)
                     np.random.uniform(0.9, 1.0),    # hard_time: 90-100% (rất chậm với hard)
                 ]
-                X_train.append(features[:18])
+                X_train.append(features[:16])
                 y_train.append(0)
                 
             elif i < 80:  # GUIDED_PRACTICE
@@ -727,7 +732,7 @@ class ContentRecommender:
         if weak_categories:
             for idx, data in enumerate(weak_categories[:5]):
                 for lesson_data in recomment:
-                    print(recomment)
+                    # print(recomment)
                     if lesson_data.get('lesson_accuracy') < 90:
                         recomment_dict = {
                                 'lesson_id': lesson_data.get('lesson_id'),
@@ -859,6 +864,914 @@ class ContentRecommender:
         return min(priority, 1.0)
     
     
+    
+class Learning_assessment:
+    def __init__(self, db):
+        self.db = db
+        
+    def learning_analytics_data(self, user_id: str, lesson_id: str):
+        now = datetime.now()
+        data = {
+            'user_id': user_id,
+            'lesson_id': lesson_id,
+            'collected_at': datetime.now().isoformat(),
+            
+            'session' : self._get_session(user_id, now),
+            'session_analytics' : self._get_session_analytics(user_id, now),
+            'total_time_for_lesson' : self._get_time_study_lesson(user_id),
+            
+            
+        }
+        
+        # print(data)
+        return data
+    
+    def _get_session_analytics(self, user_id: str, now):
+        where_clause = f""" 
+        WHERE lea.studentId = '{user_id}' AND MONTH(lea.date) = '{now.month} ORDER BY MONTH(lea.date) ASC'
+        """
+        learning_analytics = self.db.select("learning_analytics lea", "lea.totalTimeSpent, lea.readingTime, lea.videoWatchTime, lea.date", where_clause)
+        days_gap_study = self._analytics_days_gap_study(learning_analytics)
+        
+        return {
+            'learning_analytics' : learning_analytics,
+            'days_study': len(learning_analytics),
+            'day_gap_study': days_gap_study
+        }
+    
+    def _get_session(self, user_id: str, now):
+        where_clause = f"""
+            WHERE ls.studentId = '{user_id}' AND ls.status = 'completed' AND MONTH(ls.startTime) = '{now.month}'
+            ORDER BY ls.startTime ASC   
+            """
+        session = self.db.select("learning_sessions ls", "DISTINCT ls.startTime, ls.endTime, ls.status, ls.duration, ls.activitiesCount",where_clause)
+        # session_time = self.db.select("learning_sessions ls", "SUM(ls.duration) AS total_duration_session, ROUND(AVG(ls.duration), 2) AS avg_duration_session, ROUND(STDDEV_POP(ls.duration), 2) AS std_duration_session ", where_clause)
+        
+        analysis_session = self._analysis_session(session)
+        #Tính tổng số phiên, sự chênh lêch giữa các phiên, thời lượng trung bình giữa các phiên
+        # print(session)  
+        # print(analysis_session)
+        # print(session[0]['endTime'])
+       
+        
+        return{
+            'session': session,
+            'day_off': analysis_session
+            
+        }
+        
+    # def _get_activity(self, user_id: str):
+    #     where_clause = f""" 
+    #     JOIN learning_sessions lrs ON lrs.sessionId = lra.sessionId AND lrs.studentId = '{user_id}'
+    #     GROUP BY sessionId, studentId
+    #     """
+        
+        # activity = self.db.select("learning_activities lra", "")
+        
+        
+    
+    def _get_time_study_lesson(self, user_id : str):
+        now = datetime.now()
+        where_clause = f"JOIN lessons ls ON ls.id = lsp.lessonId WHERE lsp.studentId = '{user_id}' AND lsp.status = 'in_progress' ORDER BY lsp.lastAccessedAt DESC"
+        
+        lesson_progress = self.db.select("lesson_progress lsp", "DISTINCT ls.videoDuration,ls.estimatedDuration, lsp.timeSpent, lsp.progressPercentage, lsp.firstAccessedAt, lsp.lastAccessedAt, lsp.status", where_clause)
+        # lesson_progress_time = self.db.select("lesson_progress lsp", "ROUND(SUM(lsp.timeSpent),2) AS total_time_study, ROUND(AVG(lsp.timeSpent),2) AS avg_time_study, ROUND(STDDEV_POP(lsp.timeSpent), 2) AS std_time_study", where_clause)
+        # print(lesson_progress_time)
+        
+        analysis_time = self._analysis_time_(lesson_progress)
+        # print(analysis_time)
+        
+        return{
+            'time': lesson_progress,
+            'learning_attitude': analysis_time
+        }
+        
+        
+    def _analysis_session(self, session): # 0,1, 2
+        day_gap = []
+        # print(session)
+        
+        for i in range(1, len(session)):
+            temp = session[i-1]['endTime']
+            # print(temp)
+            current = session[i]['startTime'] 
+            # print(current)
+            gap_days = (current.date() - temp.date()).days
+            # print(gap_days)
+            day_gap.append(gap_days)
+        #     print("t")
+        #     print("|")
+        #     print(temp)
+        #     print("|")
+        #     print(current)
+            
+        # print(day_gap)
+            
+        return day_gap
+    
+    def _analysis_time_(self, time_study_list: list):
+        results = {}
+        time_study = []
+        estimatedDuration = []
+        videoDuration = []
+        # print(time_study_list)
+        # days_study = []
+        # print(time_study_list)
+        # if time_study_list[0]['lastAccessedAt'] and time_study_list[0]['firstAccessedAt']:
+        #     days_study = max((time_study_list[0]['lastAccessedAt'].date() - time_study_list[0]['firstAccessedAt'].date()).days, 1)
+        for record in time_study_list:
+        
+            est_min = record.get('estimatedDuration') or 0   # phút
+            vid_sec = record.get('videoDuration') or 0       # giây
+            time_for_ls = record.get('timeSpent', 0)
+            last = record.get('lastAccessedAt', [])
+            start = record.get('firstAccessedAt', [])
+            if not last:
+                continue
+            estimatedDuration.append(est_min * 60)  # đổi phút → giây
+            videoDuration.append(vid_sec)
+            time_study.append(time_for_ls)
+
+        timmeDuration = sum(estimatedDuration) + sum(videoDuration)  # tổng giây
+        totalTimeStudy = sum(time_study)
+        avg_sec_per_day = round((totalTimeStudy/timmeDuration) * 100, 2)
+        
+
+        # print(days_study)
+        results = {
+            'percent_time_study': avg_sec_per_day,
+        }
+        # print(videoDuration)
+
+        return results
+    def _analytics_days_gap_study(self, learning_analytics):
+        days_gap_study_list = []
+        for i in range(1, len(learning_analytics)):
+            pre_day = learning_analytics[i - 1]['date']
+            next_day = learning_analytics[i]['date']
+            # print(next_day)
+            days_gap_study = (next_day - pre_day).days
+            days_gap_study_list.append(days_gap_study)
+            
+        return days_gap_study_list
+        
+class RandomForestLearninAttube:
+    Learning_attitude = {
+        0 : 'Hard_work',
+        1 : 'Distraction',
+        2 : 'Lazy',
+        3 : 'Give_up',
+        4 : 'Cramming'
+    }
+    
+    def __init__(self):
+        
+        self.model = RandomForestClassifier(
+            n_estimators= 100,        # Tăng từ 100
+            max_depth=8,            # Tăng từ 8
+            min_samples_split=5,     # Giảm từ 5
+            min_samples_leaf=2,      # Thêm
+            class_weight='balanced', # Thêm để handle imbalanced data
+            random_state=42,
+            n_jobs=-1               # Parallel processing
+        )
+        self.scaler = StandardScaler()
+        self.is_trained = False
+        
+    def extract_features_lesson(self, data):
+        
+        #Tính tổng, độ lệch chuẩn, tính trung bình cho day_off, day_study và isSkipped
+        duration_list = []
+        activities_list = []
+        timeSpentInMonth_list = []
+        # timeSpent_list = []
+        now = datetime.now()
+        month_now = calendar.monthrange(now.year, now.month)[1]
+        session_info =  data.get('session', {})
+        session = session_info.get('session')
+        time_info = data.get('total_time_for_lesson', {})
+        session_analytics = data.get('session_analytics')
+        time_study_in_day = session_analytics.get('learning_analytics')
+        days_study = session_analytics.get('days_study')
+        days_gap_study = session_analytics.get('day_gap_study')
+        days_off = session_info.get('day_off')
+        # print(days_off)
+        # time = time_info.get('time')
+        # print(time)
+        # print(data)
+        # print("||")
+        # print(session_analytics)
+        # print("|||")
+        # print(session)
+        # print("||||")
+        # print(time_info)
+        # days_off = session_info.get('day_off')
+        attitude = time_info.get('learning_attitude')
+        percent_time_study = attitude.get('percent_time_study')
+        # # duration_by_month = defaultdict(int)
+        for t in time_study_in_day:
+            timeSpentInMonth_list.append(t.get('totalTimeSpent'))
+        # print(timeSpentInMonth_list)
+        
+        for s in session:
+            # print(s)
+            activities_list.append(s.get('activitiesCount'))
+            duration_list.append(s.get('duration'))
+        # print(duration_list)
+        # print(activities_list)
+        # print(days_off)
+        
+        
+        
+            
+        pre_data_user = [
+            days_study,
+            round((days_study / month_now), 2),
+            round(np.std(days_gap_study), 2),
+            round(np.mean(days_off), 2),
+            round(np.std(days_off), 2),
+            round(sum(timeSpentInMonth_list), 2),
+            round(np.mean(timeSpentInMonth_list),2),
+            round(np.std(timeSpentInMonth_list), 2),
+            round(np.mean(duration_list), 2),
+            round(np.std(duration_list), 2),
+            round(np.mean(activities_list), 2),
+            round(np.std(activities_list), 2),
+            percent_time_study
+        ]
+        
+        # print(pre_data_user)
+        
+        return np.array(pre_data_user[:13])
+    
+    
+    
+    def train(self):
+        X_train = []
+        y_train = []
+        
+        np.random.seed(42)
+        
+        samples_per_class = 100
+        """
+        Features:
+        1. Tổng số ngày học (sum_days_study)
+        2. Số trung bình ngày học (mean_days_study)
+        3. Độ lệch chuẩn khoảng cách ngày học (std_days_study) - từ gaps
+        4. Trung bình khoảng cách giữa các phiên đăng nhập (mean_gap_session) - từ gaps_sessions
+        5. Độ lệch chuẩn khoảng cách phiên đăng nhập (std_days_gap_off) - từ gaps_sessions
+        6. Tổng thời gian học trong tháng (total_timespent)
+        7. Thời gian học trung bình (mean_timespent)
+        8. Độ lệch chuẩn thời gian học (std_timespent)
+        9. Thời gian phiên học trung bình (mean_duration)
+        10. Độ lệch chuẩn thời gian phiên (std_duration)
+        11. Trung bình thao tác trên mỗi phiên (men_activities)
+        12. Độ lệch chuẩn số thao tác (std_activities)
+        13. Phần trăm thời gian học (percent_time_study)
+        """
+        
+        for class_id in range(5):  # 5 classes: 0-4
+            for i in range(samples_per_class):
+                
+                if class_id == 0:  # Hard_work
+              
+                    sum_days_study = np.random.randint(18, 28) 
+                    mean_days_study = round(sum_days_study / 30, 2)
+                    
+                   
+                    study_dates = np.sort(np.random.choice(range(1, 31), size=sum_days_study, replace=False))
+                    gaps = np.diff(study_dates) 
+                    std_days_study = round(np.std(gaps) if len(gaps) > 0 else 0, 2)
+                    
+                   
+                    extra_login_days = np.random.randint(0, 3) 
+                    extra_dates = np.random.choice([d for d in range(1, 31) if d not in study_dates], 
+                                                size=min(extra_login_days, 30-sum_days_study), replace=False)
+                    login_dates = np.sort(np.concatenate([study_dates, extra_dates]))
+                    gaps_sessions = np.diff(login_dates)
+                    mean_gap_session = round(np.mean(gaps_sessions) if len(gaps_sessions) > 0 else 1, 2)
+                    std_days_gap_off = round(np.std(gaps_sessions) if len(gaps_sessions) > 0 else 0.5, 2)
+                    
+               
+                    timespent = np.random.normal(5400, 900, size=sum_days_study)
+                    timespent = np.clip(timespent, 3600, 7200).astype(int)
+                    total_timespent = sum(timespent)
+                    mean_timespent = round(np.mean(timespent), 2)
+                    std_timespent = round(np.std(timespent), 2)
+                    
+                   
+                    duration = timespent + np.random.randint(0, 1800, size=len(timespent))
+                    mean_duration = round(np.mean(duration), 2)
+                    std_duration = round(np.std(duration), 2)
+                    
+                    
+                    activities = np.random.randint(3, 7, size=sum_days_study)
+                    men_activities = round(np.mean(activities), 2)
+                    std_activities = round(np.std(activities), 2)
+                    
+                  
+                    estimated_total = 720 * sum_days_study 
+                    percent_time_study = round((total_timespent / estimated_total) * 100, 2)
+                    
+                elif class_id == 1:  # Distraction 
+                    sum_days_study = np.random.randint(10, 20)  
+                    mean_days_study = round(sum_days_study / 30, 2)
+                   
+                    study_dates = np.sort(np.random.choice(range(1, 31), size=sum_days_study, replace=False))
+                    gaps = np.diff(study_dates)
+                    std_days_study = round(np.std(gaps) if len(gaps) > 0 else 0, 2)
+                    
+                    
+                    extra_login_days = np.random.randint(5, 10)
+                    extra_dates = np.random.choice([d for d in range(1, 31) if d not in study_dates], 
+                                                size=min(extra_login_days, 30-sum_days_study), replace=False)
+                    login_dates = np.sort(np.concatenate([study_dates, extra_dates]))
+                    gaps_sessions = np.diff(login_dates)
+                    mean_gap_session = round(np.mean(gaps_sessions) if len(gaps_sessions) > 0 else 1, 2)
+                    std_days_gap_off = round(np.std(gaps_sessions) if len(gaps_sessions) > 0 else 1, 2)
+                    
+                   
+                    timespent = np.random.normal(2400, 800, size=sum_days_study)
+                    timespent = np.clip(timespent, 600, 4500).astype(int)
+                    total_timespent = sum(timespent)
+                    mean_timespent = round(np.mean(timespent), 2)
+                    std_timespent = round(np.std(timespent) * 1.5, 2)  # Độ lệch lớn
+                    
+                 
+                    duration = timespent * np.random.uniform(2, 4, size=len(timespent))
+                    mean_duration = round(np.mean(duration), 2)
+                    std_duration = round(np.std(duration), 2)
+                    
+                    
+                    activities = np.random.randint(6, 15, size=sum_days_study)
+                    men_activities = round(np.mean(activities), 2)
+                    std_activities = round(np.std(activities), 2)
+                    
+                    estimated_total = 720 * sum_days_study
+                    percent_time_study = round((total_timespent / estimated_total) * 100, 2)
+                    
+                elif class_id == 2:  
+                    sum_days_study = np.random.randint(3, 10) 
+                    mean_days_study = round(sum_days_study / 30, 2)
+                    
+                   
+                    study_dates = np.sort(np.random.choice(range(1, 31), size=sum_days_study, replace=False))
+                    gaps = np.diff(study_dates) if len(study_dates) > 1 else np.array([15])
+                    std_days_study = round(np.std(gaps), 2)
+                    
+                 
+                    extra_login_days = np.random.randint(0, 2)
+                    if 30-sum_days_study > 0 and extra_login_days > 0:
+                        extra_dates = np.random.choice([d for d in range(1, 31) if d not in study_dates], 
+                                                    size=min(extra_login_days, 30-sum_days_study), replace=False)
+                        login_dates = np.sort(np.concatenate([study_dates, extra_dates]))
+                    else:
+                        login_dates = study_dates
+                    gaps_sessions = np.diff(login_dates) if len(login_dates) > 1 else np.array([15])
+                    mean_gap_session = round(np.mean(gaps_sessions), 2)
+                    std_days_gap_off = round(np.std(gaps_sessions), 2)
+                    
+                    
+                    timespent = np.random.randint(300, 1200, size=sum_days_study)
+                    total_timespent = sum(timespent)
+                    mean_timespent = round(np.mean(timespent), 2)
+                    std_timespent = round(np.std(timespent), 2)
+                    
+                    duration = timespent + np.random.randint(1000, 3000, size=len(timespent))
+                    mean_duration = round(np.mean(duration), 2)
+                    std_duration = round(np.std(duration), 2)
+                    
+                    
+                    activities = np.random.randint(1, 4, size=sum_days_study)
+                    men_activities = round(np.mean(activities), 2)
+                    std_activities = round(np.std(activities), 2)
+                    
+                    estimated_total = 720 * max(sum_days_study, 5)
+                    percent_time_study = round((total_timespent / estimated_total) * 100, 2)
+                    
+                elif class_id == 3:  # Give_up 
+                    give_up_type = np.random.choice(['early', 'gradual'], p=[0.4, 0.6])
+                    
+                    if give_up_type == 'early':  
+                        sum_days_study = np.random.randint(2, 6)
+                        mean_days_study = round(sum_days_study / 30, 2)
+                        
+                        
+                        study_dates = np.sort(np.random.choice(range(1, 11), size=sum_days_study, replace=False))
+                        
+                     
+                        extra_login_days = np.random.randint(2, 5)
+                        extra_dates = np.random.choice(range(1, 15), size=min(extra_login_days, 15-sum_days_study), replace=False)
+                        login_dates = np.sort(np.unique(np.concatenate([study_dates, extra_dates])))
+                        
+             
+                        timespent = np.array([np.random.randint(600-i*100, 1200-i*150) 
+                                            for i in range(sum_days_study)])
+                        timespent = np.clip(timespent, 60, 3600).astype(int)
+                        activities = np.random.randint(1, 3, size=sum_days_study)
+                        
+                    else:  
+                        sum_days_study = np.random.randint(8, 15)
+                        mean_days_study = round(sum_days_study / 30, 2)
+                        
+                    
+                        num_early = int(sum_days_study * 0.7)
+                        num_late = sum_days_study - num_early
+                        
+                        early_dates = np.random.choice(range(1, 15), size=num_early, replace=False)
+                        late_dates = np.random.choice(range(20, 31), size=num_late, replace=False)
+                        study_dates = np.sort(np.concatenate([early_dates, late_dates]))
+                        
+                        extra_login_days = np.random.randint(3, 8)
+                        extra_dates = np.random.choice(range(1, 31), size=min(extra_login_days, 31-sum_days_study), replace=False)
+                        login_dates = np.sort(np.unique(np.concatenate([study_dates, extra_dates])))
+                        
+                      
+                        early_time = np.random.randint(3000, 5400, size=num_early)
+                        late_time = np.random.randint(300, 1200, size=num_late)
+                        timespent = np.concatenate([early_time, late_time])
+                        
+                        early_act = np.random.randint(4, 7, size=num_early)
+                        late_act = np.random.randint(1, 3, size=num_late)
+                        activities = np.concatenate([early_act, late_act])
+                    
+                   
+                    gaps = np.diff(study_dates) if len(study_dates) > 1 else np.array([20])
+                    std_days_study = round(np.std(gaps), 2)
+                    
+                    gaps_sessions = np.diff(login_dates) if len(login_dates) > 1 else np.array([10])
+                    mean_gap_session = round(np.mean(gaps_sessions), 2)
+                    std_days_gap_off = round(np.std(gaps_sessions), 2)
+                    
+                    total_timespent = sum(timespent)
+                    mean_timespent = round(np.mean(timespent), 2)
+                    std_timespent = round(np.std(timespent), 2)
+                    
+                    duration = timespent * np.random.uniform(1.5, 3, size=len(timespent))
+                    mean_duration = round(np.mean(duration), 2)
+                    std_duration = round(np.std(duration), 2)
+                    
+                    men_activities = round(np.mean(activities), 2)
+                    std_activities = round(np.std(activities), 2)
+                    
+                    estimated_total = 720 * 10
+                    percent_time_study = round((total_timespent / estimated_total) * 100, 2)
+                    
+                else:  #Cramming
+                    sum_days_study = np.random.randint(5, 10)
+                    mean_days_study = round(sum_days_study / 30, 2)
+                    
+               
+                    early_count = int(sum_days_study * 0.2)
+                    late_count = sum_days_study - early_count
+                    
+                    early_dates = np.random.choice(range(1, 20), size=early_count, replace=False)
+                    late_dates = np.random.choice(range(20, 31), size=late_count, replace=False)
+                    study_dates = np.sort(np.concatenate([early_dates, late_dates]))
+             
+                    extra_login_days = np.random.randint(2, 5)
+             
+                    extra_dates = np.random.choice(range(18, 31), size=min(extra_login_days, 31-sum_days_study), replace=False)
+                    login_dates = np.sort(np.unique(np.concatenate([study_dates, extra_dates])))
+                    
+                    gaps = np.diff(study_dates)
+                    std_days_study = round(np.std(gaps) if len(gaps) > 0 else 0, 2)
+                    
+                    gaps_sessions = np.diff(login_dates)
+                    mean_gap_session = round(np.mean(gaps_sessions) if len(gaps_sessions) > 0 else 1, 2)
+                    std_days_gap_off = round(np.std(gaps_sessions) * 2, 2)  # High variance
+                    
+             
+                    early_time = np.random.randint(1800, 3600, size=early_count)
+                    late_time = np.random.randint(10800, 21600, size=late_count)  # 3-6 giờ
+                    timespent = np.concatenate([early_time, late_time])
+                    
+                    total_timespent = sum(timespent)
+                    mean_timespent = round(np.mean(timespent), 2)
+                    std_timespent = round(np.std(timespent), 2)
+                    
+                    duration = timespent + np.random.randint(0, 1800, size=len(timespent))
+                    mean_duration = round(np.mean(duration), 2)
+                    std_duration = round(np.std(duration), 2)
+                    
+                    early_act = np.random.randint(3, 5, size=early_count)
+                    late_act = np.random.randint(10, 20, size=late_count)
+                    activities = np.concatenate([early_act, late_act])
+                    men_activities = round(np.mean(activities), 2)
+                    std_activities = round(np.std(activities), 2)
+                    
+                    estimated_total = 720 * sum_days_study
+                    percent_time_study = round((total_timespent / estimated_total) * 100, 2)
+                
+                # Create feature vector
+                features = [
+                    sum_days_study,           # 1. Tổng số ngày học
+                    mean_days_study,          # 2. Trung bình ngày học
+                    std_days_study,           # 3. Std của gaps (ngày học)
+                    mean_gap_session,         # 4. Mean của gaps_sessions (ngày đăng nhập)
+                    std_days_gap_off,         # 5. Std của gaps_sessions
+                    total_timespent,          # 6. Tổng thời gian học
+                    mean_timespent,           # 7. Thời gian học trung bình
+                    std_timespent,            # 8. Std thời gian học
+                    mean_duration,            # 9. Duration trung bình
+                    std_duration,             # 10. Std duration
+                    men_activities,           # 11. Activities trung bình
+                    std_activities,           # 12. Std activities
+                    percent_time_study        # 13. Phần trăm thời gian học
+                ]
+                
+                # Add small noise
+                features[5] *= np.random.uniform(0.95, 1.05)
+                features[10] *= np.random.uniform(0.9, 1.1)
+                
+                X_train.append(features)
+                y_train.append(class_id)
+        
+        X_train = np.array(X_train)
+        y_train = np.array(y_train)
+        
+        # Split data
+        X_train_split, X_val, y_train_split, y_val = train_test_split(
+            X_train, y_train, test_size=0.2, random_state=42, stratify=y_train
+        )
+        
+        # Fit scaler và transform data
+        X_train_scaled = self.scaler.fit_transform(X_train_split)
+        X_val_scaled = self.scaler.transform(X_val)
+        
+        
+        param_grid = {
+            'n_estimators': [100, 200, 300],
+            'max_depth': [10, 20, 30, None],
+            'min_samples_split': [2, 5, 10],
+            'min_samples_leaf': [1, 2, 4]
+        }
+        
+        grid_search = GridSearchCV(
+            RandomForestClassifier(random_state=42),
+            param_grid,
+            cv=5,
+            scoring='accuracy',
+            n_jobs=-1
+        )
+        
+        grid_search.fit(X_train_scaled, y_train_split)
+        self.model = grid_search.best_estimator_
+        
+        # Evaluate
+        y_pred = self.model.predict(X_val_scaled)
+        
+        labels = sorted(set(y_val))
+        target_names = [self.Learning_attitude[i] for i in labels]
+        
+        print("Best parameters:", grid_search.best_params_)
+        print("\nClassification Report:")
+        print(classification_report(
+            y_val, y_pred, target_names=target_names, digits=2
+        ))
+        
+        # Feature importance
+        feature_names = [
+            'sum_days_study', 'mean_days_study', 'std_days_study',
+            'mean_gap_session', 'std_days_gap_off', 'total_timespent',
+            'mean_timespent', 'std_timespent', 'mean_duration',
+            'std_duration', 'men_activities', 'std_activities',
+            'percent_time_study'
+        ]
+        
+        importances = self.model.feature_importances_
+        indices = np.argsort(importances)[::-1]
+        
+        print("\nFeature Importance:")
+        for i in range(len(feature_names)):
+            print(f"{i+1}. {feature_names[indices[i]]}: {importances[indices[i]]:.4f}")
+        
+        self.is_trained = True
+        return X_train, y_train
+
+    # Helper function để tính percent_time_study cho real data
+    def calculate_percent_time_study(total_time_spent, estimated_duration_minutes, video_duration_seconds=None):
+        """
+        Calculate percent_time_study consistently
+        
+        Args:
+            total_time_spent: Total time spent in seconds
+            estimated_duration_minutes: Estimated duration in minutes
+            video_duration_seconds: Video duration in seconds (optional)
+        
+        Returns:
+            percent_time_study as a percentage
+        """
+        # Convert estimated duration to seconds
+        estimated_total = estimated_duration_minutes * 60
+        
+        # Add video duration if available
+        if video_duration_seconds:
+            estimated_total += video_duration_seconds
+        
+        # Avoid division by zero
+        if estimated_total == 0:
+            return 0
+        
+        # Calculate percentage
+        return round((total_time_spent / estimated_total) * 100, 2)
+    
+    
+    
+    def predict(self, data, return_proba=False):
+        # """
+            
+        # Returns:
+        # --------
+        # dict : Dictionary chứa kết quả dự đoán
+        #     - 'prediction': Class ID được dự đoán
+        #     - 'attitude': Tên learning attitude
+        #     - 'confidence': Độ tin cậy của dự đoán
+        #     - 'probabilities': Xác suất cho mỗi class (nếu return_proba=True)
+        # """
+        
+        # # Kiểm tra model đã được train chưa
+        if not self.is_trained:
+            raise ValueError("Model chưa được train. Hãy gọi train() trước!")
+        
+        # # Extract features nếu input là dict
+        if isinstance(data, dict):
+            features = self.extract_features_lesson(data)
+        elif isinstance(data, (np.ndarray, list)):
+            features = np.array(data)
+            if features.shape[-1] != 8:
+                raise ValueError(f"Expected 8 features, got {features.shape[-1]}")
+        else:
+            raise TypeError("Data must be dict or numpy array")
+        
+        # # Reshape nếu cần
+        if features.ndim == 1:
+            features = features.reshape(1, -1)
+        
+        # # Scale features
+        features_scaled = self.scaler.transform(features)
+        
+        # # Predict
+        prediction = self.model.predict(features_scaled)[0]
+        proba = self.model.predict_proba(features_scaled)[0]
+        
+        # # Tạo kết quả
+        result = {
+            'prediction': int(prediction),
+            'attitude': self.Learning_attitude[prediction],
+            'confidence': float(np.max(proba)),
+        }
+        
+        if return_proba:
+            result['probabilities'] = {
+                self.Learning_attitude[i]: float(prob) 
+                for i, prob in enumerate(proba)
+            }
+        
+        
+        return result
+        # return True
+    
+    
+            
+class AITrackingDataCollector:
+    def __init__(self, db):
+        self.db = db
+    
+    def collect_comprehensive_data(self, user_id: str, course_id: str = None):
+        """
+        Thu thập tất cả dữ liệu cần thiết cho AI tracking
+        """
+        data = {
+            'user_id': user_id,
+            'course_id': course_id,
+            'collected_at': datetime.now().isoformat(),
+            
+            # 1. BASIC PROGRESS DATA
+            'basic_progress': self._get_basic_progress(user_id, course_id),
+            
+            # # 2. LEARNING ACTIVITIES - Dữ liệu hành vi chi tiết
+            # 'learning_activities': self._get_learning_activities(user_id, course_id),
+            
+            # # 3. LEARNING SESSIONS - Phiên học tập
+            # 'learning_sessions': self._get_learning_sessions(user_id),
+            
+            # # 4. ASSESSMENT PERFORMANCE - Kết quả kiểm tra
+            # 'assessment_performance': self._get_assessment_performance(user_id, course_id),
+            
+            # # 5. TIME PATTERNS - Mô hình thời gian học
+            'time_patterns': self._get_time_patterns(user_id),
+            
+            # # 6. ENGAGEMENT METRICS - Chỉ số tương tác
+            # 'engagement_metrics': self._get_engagement_metrics(user_id, course_id),
+            
+            # # 7. LEARNING STYLE - Phong cách học tập
+            # 'learning_style': self._get_learning_style(user_id),
+            
+            # # 8. CONTENT INTERACTION - Tương tác với nội dung
+            # 'content_interaction': self._get_content_interaction(user_id, course_id),
+            
+            # # 9. SOCIAL INTERACTION - Tương tác xã hội
+            # 'social_interaction': self._get_social_interaction(user_id),
+            
+            # # 10. HISTORICAL ANALYTICS - Dữ liệu phân tích lịch sử
+            # 'historical_analytics': self._get_historical_analytics(user_id)
+        }
+        
+        return data
+    
+    def _get_basic_progress(self, user_id: str, course_id: str = None):
+        where_claure = f"""
+        JOIN courses c ON e.courseId = c.id WHERE e.studentId = '{user_id}' 
+        {f"AND e.courseId = '{course_id}'" if course_id else ""} 
+        ORDER BY e.enrollmentDate DESC
+        """
+        enrollments = self.db.select("enrollments e", "e.*, c.*", where_claure)
+        
+        where_claure_ls = f""" 
+        JOIN lessons l ON lp.lessonId = l.id WHERE lp.studentId = '{user_id}'
+        {f"AND EXISTS (SELECT 1 FROM enrollments e WHERE e.id = lp.enrollmentId AND e.courseId = '{course_id}')" if course_id else ""}
+        ORDER BY lp.lastAccessedAt DESC
+        """
+        
+        lesson_progress = self.db.select("lesson_progress lp", "lp.*", where_claure_ls)
+        
+        analysis = self._analyze_basic_progress(enrollments, lesson_progress)
+        
+        return {
+            'enrollments': enrollments,
+            'lesson_progress': lesson_progress,
+            'analysis': analysis
+        }
+        
+    def _get_learning_activities(self, user_id: str, course_id: str = None):
+        where_clause = f""" 
+        WHERE la.studentId = '{user_id}' {f"AND la.courseId = '{course_id}'" if course_id else ""}
+        ORDER BY la.timestamp DESC LIMIT 1000
+        """
+        
+        activities = self.db.select("learning_activities la","la.*",where_clause)
+        
+        activity_analysis = self._analyze_activity_patterns(activities)
+        
+        return {
+            'raw_activities': activities,
+            'patterns': activity_analysis
+        }
+        
+        
+    def _get_learning_sessions(self, user_id: str):
+        where_clause = f" WHERE ls.studentId = '{user_id}' ORDER BY ls.startTime DESC LIMIT 50 "
+        
+        sessions = self.db.select("learning_sessions ls", "ls.*", where_clause)
+        
+         
+        return {
+            'recent_sessions': sessions,
+            'session_analysis': self._analyze_sessions(sessions)
+        }
+        
+    def _get_time_patterns(self, user_id: str):
+        where_clause = f" WHERE la.studentId = '{user_id}' ORDER BY la.date DESC LIMIT 30"
+         
+        analytics = self.db.select("learning_analytics la", " la.*", where_clause)
+        
+        return{
+            'daily_analytics': analytics,
+            'time_preferences': self._analyze_time_preferences(analytics)
+        }
+        
+        
+        
+    def _analyze_time_preferences(self, analytics):
+        """Phân tích preferences thời gian"""
+        if not analytics:
+            return {}
+            
+        df = pd.DataFrame(analytics)
+        
+        # print(df['engagementScore'])  
+        
+        analysis = {
+            'avg_daily_time': df['totalTimeSpent'].mean() if 'totalTimeSpent' in df.columns else 0,
+            'avg_engagement_score': df['engagementScore'].mean() if 'engagementScore' in df.columns else 0,
+            'dominant_performance_level': 'unknown'
+        }
+        
+        # Get dominant performance level
+        if 'performanceLevel' in df.columns and not df.empty:
+            mode_result = df['performanceLevel'].mode()
+            if not mode_result.empty:
+                analysis['dominant_performance_level'] = mode_result[0]
+        
+        if 'mostActiveHour' in df.columns:
+            analysis['preferred_hours'] = df['mostActiveHour'].value_counts().to_dict()
+            
+        if 'learningPattern' in df.columns:
+            analysis['learning_patterns'] = df['learningPattern'].value_counts().to_dict()
+            
+        return analysis
+        
+    
+    def _analyze_sessions(self, sessions):
+        """Phân tích sessions"""
+        if not sessions:
+            return {}
+            
+        df = pd.DataFrame(sessions)
+        
+        analysis = {
+            'total_sessions': len(sessions),
+            'avg_session_duration': df['duration'].mean() if 'duration' in df.columns else 0,
+            'avg_activities_per_session': df['activitiesCount'].mean() if 'activitiesCount' in df.columns else 0,
+            # 'avg_page_views': df['pageViews'].mean() if 'pageViews' in df.columns else 0
+        }
+        
+        # Device analysis
+        if 'deviceType' in df.columns:
+            analysis['device_preferences'] = df['deviceType'].value_counts().to_dict()
+            
+        return analysis
+        
+    def _analyze_activity_patterns(self, activities):
+        """Phân tích mô hình từ learning activities"""
+        if not activities:
+            return {}
+            
+        df = pd.DataFrame(activities)
+        
+        patterns = {
+            'activity_distribution': df['activityType'].value_counts().to_dict() if 'activityType' in df.columns else {},
+            'device_usage': df['deviceType'].value_counts().to_dict() if 'deviceType' in df.columns else {},
+            'browser_usage': df['browser'].value_counts().to_dict() if 'browser' in df.columns else {}
+        }
+        
+        # Phân tích thời gian nếu có duration
+        if 'duration' in df.columns and 'activityType' in df.columns:
+            patterns['avg_duration_by_type'] = df.groupby('activityType')['duration'].mean().to_dict()
+        
+        # Phân tích theo giờ nếu có timestamp
+        if 'timestamp' in df.columns:
+            df['hour'] = pd.to_datetime(df['timestamp']).dt.hour
+            patterns['hourly_patterns'] = df['hour'].value_counts().to_dict()
+        
+        return patterns
+        
+    def _analyze_basic_progress(self, enrollments, lesson_progress):
+        """Phân tích dữ liệu cơ bản"""
+        if not enrollments:
+            return {}
+            
+        enrollments_df = pd.DataFrame(enrollments)
+        lesson_df = pd.DataFrame(lesson_progress) if lesson_progress else pd.DataFrame()
+        
+        # Thống kê enrollments
+        total_enrollments = len(enrollments_df)
+        completed_courses = len(enrollments_df[enrollments_df['status'] == 'completed'])
+        dropped_courses = len(enrollments_df[enrollments_df['status'] == 'dropped'])
+        avg_progress = enrollments_df['progressPercentage'].mean()
+        
+        # Thống kê lessons
+        lesson_stats = {}
+        if not lesson_df.empty:
+            total_lessons = len(lesson_df)
+            completed_lessons = len(lesson_df[lesson_df['status'] == 'completed'])
+            skipped_lessons = len(lesson_df[lesson_df['isSkipped'] == 1])
+            avg_lesson_progress = lesson_df['progressPercentage'].mean()
+            
+            lesson_stats = {
+                'total_lessons_accessed': total_lessons,
+                'completed_lessons': completed_lessons,
+                'skipped_lessons': skipped_lessons,
+                'completion_rate': (completed_lessons / total_lessons * 100) if total_lessons > 0 else 0,
+                'skip_rate': (skipped_lessons / total_lessons * 100) if total_lessons > 0 else 0,
+                'avg_lesson_progress': avg_lesson_progress
+            }
+        
+        # Warnings
+        warnings = []
+        if total_enrollments > 0:
+            dropout_rate = (dropped_courses / total_enrollments * 100)
+            if dropout_rate > 60:
+                warnings.append("Tỷ lệ bỏ học cao (>60%)")
+        
+        if lesson_stats.get('skip_rate', 0) > 50:
+            warnings.append("Tỷ lệ skip bài học cao (>50%)")
+        
+        if avg_progress < 30:
+            warnings.append("Tiến độ học tập chậm (<30%)")
+            
+        return {
+            'total_enrollments': total_enrollments,
+            'completed_courses': completed_courses,
+            'dropped_courses': dropped_courses,
+            'dropout_rate': (dropped_courses / total_enrollments * 100) if total_enrollments > 0 else 0,
+            'avg_course_progress': avg_progress,
+            'lesson_statistics': lesson_stats,
+            'warnings': warnings
+        }
+        
+    
         
     
 # class LearningUserProfile:
@@ -905,72 +1818,86 @@ if __name__ == "__main__":
 
         strategy, confidence, sdf = result
         recomment = cm.recommend_lessons(db_manager, strategy, analysis)
+        learning = Learning_assessment(db_manager)
+        tesst = learning.learning_analytics_data("user-student-14", "lesson-html-tags")
+        rd = RandomForestLearninAttube()
+        t = rd.extract_features_lesson(tesst)
+        tr = rd.train()
+        r = rd.predict(tesst, return_proba = True)
+        print("\n=== Prediction Result ===")
+        print(f"Predicted attitude: {r['attitude']}")
+        print(f"Confidence: {r['confidence']:.2%}")
+        print("\nProbabilities for each class:")
+        for attitude, prob in r['probabilities'].items():
+            print(f"  {attitude}: {prob:.2%}")
+        # track = AITrackingDataCollector(db_manager)
+        # test = track.collect_comprehensive_data("user-student-01","course-html-css")
+        # print(test)
+        # test = track.collect_comprehensive_data
         # # cm = ContentRecommender(db_manager)
         # # cm_def = cm.recommend_lessons()
-        print("\n📊 KẾT QUẢ PHÂN TÍCH:")
-        print("Has data:", analysis.get("has_data"))
-        print("Total questions:", analysis.get("total_questions"))
-        print("Total time:", analysis.get("total_time"), "s")
-        print("Correct answers:", analysis.get("correct_answers"))
-        print("Overall accuracy:", analysis.get("overall_accuracy_percent"), "%")
-        print("Overall accuracy (decimal):", analysis.get("overall_accuracy"))
-        print("Reason: ", result[2].get('reason') )
+        # print("\n📊 KẾT QUẢ PHÂN TÍCH:")
+        # print("Has data:", analysis.get("has_data"))
+        # print("Total questions:", analysis.get("total_questions"))
+        # print("Total time:", analysis.get("total_time"), "s")
+        # print("Correct answers:", analysis.get("correct_answers"))
+        # print("Overall accuracy:", analysis.get("overall_accuracy_percent"), "%")
+        # print("Overall accuracy (decimal):", analysis.get("overall_accuracy"))
+        # print("Reason: ", result[2].get('reason') )
 
-        # print("\n📈 Hiệu suất theo danh mục:")
-        # print(json.dumps(analysis.get("assessment_attempt_performance", {}), indent=2, ensure_ascii=False))
+        # # print("\n📈 Hiệu suất theo danh mục:")
+        # # print(json.dumps(analysis.get("assessment_attempt_performance", {}), indent=2, ensure_ascii=False))
 
-        # print("\n📉 Hiệu suất theo độ khó:")
-        # print(json.dumps(analysis.get("difficulty_performance", {}), indent=2, ensure_ascii=False))
+        # # print("\n📉 Hiệu suất theo độ khó:")
+        # # print(json.dumps(analysis.get("difficulty_performance", {}), indent=2, ensure_ascii=False))
 
-        # print("\n🚨 Danh mục yếu:")
-        # print(json.dumps(analysis.get("weak_categories", []), indent=2, ensure_ascii=False))
+        # # print("\n🚨 Danh mục yếu:")
+        # # print(json.dumps(analysis.get("weak_categories", []), indent=2, ensure_ascii=False))
 
-        # print("\n📚 Cơ hội cải thiện:")
-        # print(json.dumps(analysis.get("avd_categories", []), indent=2, ensure_ascii=False))
+        # # print("\n📚 Cơ hội cải thiện:")
+        # # print(json.dumps(analysis.get("avd_categories", []), indent=2, ensure_ascii=False))
         
-        print(f"🔍 strategy after assignment: {strategy}")
-        print(f"🔍 confidence after assignment: {confidence}")
-        # print(recomment)
-        # print(f"🔍 analysis after assignment: {sdf}")
-        # # print(strategy)
-        # print(recomment[0])
-        if recomment:
-            for idx, lesson in enumerate(recomment, 1):
-                # print(lesson)
-                print(lesson.get('lesson_id'))
-                print(f"\n{idx}. {lesson.get('title', 'N/A')}")
-                print(f"   📖  Khóa học: {lesson.get('course_title', 'N/A')}")
-                print(f"   🏷️  Danh mục: {lesson.get('category_name', 'N/A')}")
-                print(f"   ⭐  Độ ưu tiên: {lesson.get('priority_score', 0):.2f}")
-                print(f"   🤓  Độ khó: {lesson.get('difficulty')}")
-                print(f"   💡  Lý do: {lesson.get('recommendation_reason', 'N/A')}")
-                print(f"   💯  Tổng số câu hỏi của bài học: {lesson.get('total_question_lesson')}")
-                print(f"   🧠  Độ chính xác trong bài học: {lesson.get('lesson_accuracy')}%")
-                print(f"   🔗  Đường dẫn: {lesson.get('lesson_slug')}")
-                # Thông tin bổ sung nếu có
-                if 'error_count' in lesson:
-                    print(f"   ❌  Số lỗi: {lesson['error_count']}")
-                if 'questions_wrong' in lesson:
-                    # print(f"   ❓  Câu sai: {', '.join(lesson['questions_wrong'])}")
-                    print(f"   ❓  Câu sai: {' -> '.join(f'{q['title']}' for q in lesson['questions_wrong'])}")
+        # print(f"🔍 strategy after assignment: {strategy}")
+        # print(f"🔍 confidence after assignment: {confidence}")
+        # # print(recomment)
+        # # print(f"🔍 analysis after assignment: {sdf}")
+        # # # print(strategy)
+        # # print(recomment[0])
+        # if recomment:
+        #     for idx, lesson in enumerate(recomment, 1):
+        #         # print(lesson)
+        #         print(lesson.get('lesson_id'))
+        #         print(f"\n{idx}. {lesson.get('title', 'N/A')}")
+        #         print(f"   📖  Khóa học: {lesson.get('course_title', 'N/A')}")
+        #         print(f"   🏷️  Danh mục: {lesson.get('category_name', 'N/A')}")
+        #         print(f"   ⭐  Độ ưu tiên: {lesson.get('priority_score', 0):.2f}")
+        #         print(f"   🤓  Độ khó: {lesson.get('difficulty')}")
+        #         print(f"   💡  Lý do: {lesson.get('recommendation_reason', 'N/A')}")
+        #         print(f"   💯  Tổng số câu hỏi của bài học: {lesson.get('total_question_lesson')}")
+        #         print(f"   🧠  Độ chính xác trong bài học: {lesson.get('lesson_accuracy')}%")
+        #         print(f"   🔗  Đường dẫn: {lesson.get('lesson_slug')}")
+        #         # Thông tin bổ sung nếu có
+        #         if 'error_count' in lesson:
+        #             print(f"   ❌  Số lỗi: {lesson['error_count']}")
+        #         if 'questions_wrong' in lesson:
+        #             # print(f"   ❓  Câu sai: {', '.join(lesson['questions_wrong'])}")
+        #             print(f"   ❓  Câu sai: {' -> '.join(f'{q['title']}' for q in lesson['questions_wrong'])}")
                     
-                learner_data = {
-                    'lesson_id': lesson.get('lesson_id'),
-                    'priority': lesson.get('priority_score'),
-                    'overall_accuracy_decimal': analysis.get("overall_accuracy"),
-                    'strategy': strategy,
-                    'current_lesson': {
-                        'level': lesson.get('difficulty'),
-                        'lesson_accuracy': lesson.get('lesson_accuracy')
-                    },
-                }
+        #         learner_data = {
+        #             'lesson_id': lesson.get('lesson_id'),
+        #             'priority': lesson.get('priority_score'),
+        #             'overall_accuracy_decimal': analysis.get("overall_accuracy"),
+        #             'strategy': strategy,
+        #             'current_lesson': {
+        #                 'level': lesson.get('difficulty'),
+        #                 'lesson_accuracy': lesson.get('lesson_accuracy')
+        #             },
+        #         }
                 
-                NN = LearningUserProfile(learner_data)
-                test = NN.example_data(db_manager, "user-student-01")
                     
 
-        else:
-            print("Không có bài học nào được đề xuất.")
+        # else:
+        #     print("Không có bài học nào được đề xuất.")
         
         print("-" * 80)
         
