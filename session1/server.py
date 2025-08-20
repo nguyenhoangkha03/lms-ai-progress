@@ -54,22 +54,22 @@ def initialize_models():
                     learning_strategy_ai = loaded_strategy
                 if loaded_attitude.is_trained:
                     random_forest_model = loaded_attitude
-                print("✅ Pre-trained models loaded successfully")
+                print("Pre-trained models loaded successfully")
         except Exception as e:
-            print(f"⚠️ Could not load pre-trained models: {e}")
+            print(f"Could not load pre-trained models: {e}")
             # Train models if no pre-trained ones exist
-            print("🔄 Training models...")
+            print("Training models...")
             learning_strategy_ai.train_model()
             random_forest_model.train()
             
             # Save trained models
             ModelManager.save_all_models(learning_strategy_ai, random_forest_model, "./models/")
-            print("✅ Models trained and saved")
+            print("Models trained and saved")
             
         return True
         
     except Exception as e:
-        print(f"❌ Error initializing models: {e}")
+        print(f"Error initializing models: {e}")
         return False
 
 @app.route('/health', methods=['GET'])
@@ -315,19 +315,19 @@ def retrain_models():
     try:
         global learning_strategy_ai, random_forest_model
         
-        print("🔄 Starting model retraining...")
+        print("Starting model retraining...")
         
         # Retrain LearningStrategyAI
         learning_strategy_ai.train_model()
-        print("✅ LearningStrategyAI retrained")
+        print("LearningStrategyAI retrained")
         
         # Retrain RandomForestLearninAttube
         random_forest_model.train()
-        print("✅ RandomForestLearninAttube retrained")
+        print("RandomForestLearninAttube retrained")
         
         # Save retrained models
         ModelManager.save_all_models(learning_strategy_ai, random_forest_model, "./models/")
-        print("✅ Retrained models saved")
+        print("Retrained models saved")
         
         return jsonify({
             'success': True,
@@ -396,13 +396,13 @@ def internal_error(error):
     }), 500
 
 if __name__ == '__main__':
-    print("🚀 Starting AI Learning System Server...")
+    print("Starting AI Learning System Server...")
     
     # Initialize models
     if initialize_models():
-        print("✅ Models initialized successfully")
-        print("🌐 Server starting on http://localhost:5000")
-        print("\n📋 Available endpoints:")
+        print("Models initialized successfully")
+        print("Server starting on http://localhost:5000")
+        print("\nAvailable endpoints:")
         print("  GET  /health                    - Health check")
         print("  POST /api/analyze-performance   - Analyze user performance")
         print("  POST /api/predict-strategy      - Predict learning strategy")
@@ -415,5 +415,5 @@ if __name__ == '__main__':
         
         app.run(debug=True, host='0.0.0.0', port=5000)
     else:
-        print("❌ Failed to initialize models. Server not started.")
+        print("Failed to initialize models. Server not started.")
         sys.exit(1)

@@ -6,6 +6,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.model_selection import cross_val_score
 import json
 from typing import Dict, List, Tuple
 from datetime import datetime
@@ -421,8 +423,7 @@ class LearningStrategyAI:
                 features.append(float(accuracy))
                 features.append(1.0) #có làm
             else:
-                features.append(0.5)  # Default
-                features.append(0) #không làm
+                features.append(0.0)  
         
         # 3. Category weakness indicators (3 features) - CHUẨN HÓA
         weak_cats = performance_data.get('weak_categories', [])
@@ -452,12 +453,19 @@ class LearningStrategyAI:
         
         
     
-        features = [float(f) if isinstance(f, (int, float)) else 0.5 for f in features]
-        features = [max(0.0, min(f, 1.5)) for f in features]  
+        clean_features = []
+        for f in features:
+            if isinstance(f, (int, float)):
+                val = float(f)
+            else:
+                val = 0.0
+            clean_features.append(max(0.0, min(val, 1.5)))
+        features = clean_features
         
         print(f"📊 Final normalized features ({len(features)}): {[round(f, 3) for f in features]}")
         
         return np.array(features[:16])
+    
     
     
     def train_model(self):
@@ -466,229 +474,376 @@ class LearningStrategyAI:
         
         np.random.seed(42)
         
-        for i in range(200):
-            if i < 40:  # INTENSIVE_FOUNDATION - Very weak
-                # easy_acc = np.random.uniform(0.2, 0.6)
-                # mediun_acc = np.random.uniform()
-                # if easy_acc == 0.5:
-                #     easy_flag = np.random.choice([0.0, 1.0])
-                # else:
-                #     easy_flag = 1.0
+        
+        total_samples = 1000  
+        
+        for i in range(total_samples):
+            if i < 200:  
+                medium_flag = np.random.choice([0.0, 1.0], p=[0.8, 0.2])
+                if medium_flag == 1:
+                    medium_acc = np.random.uniform(0.0, 0.5)
+                else:
+                    medium_acc= 0.0
+                    
                 features = [
-                    # Overall 
-                    np.random.uniform(0.2, 0.4),    # accuracy
-                    np.random.uniform(0.02, 0.1),  # questions
-                    np.random.uniform(0.6, 1.0),    # hints
-                    np.random.uniform(1.2, 1.5),    # time
-                    # Difficulty + flags 
-                    np.random.uniform(0.4, 0.8),    # easy acc
-                    1.0,       
-                    np.random.uniform(0.0, 0.5),    # medium acc
-                    np.random.choice([0.0, 1.0], p=[0.6, 0.4]),                            # medium flag
-                    np.random.uniform(0.0, 0.2),    # hard acc
-                    np.random.choice([0.0, 1.0], p=[0.7, 0.3]), # hard flag (maybe didn't try)
-                    # Weakness (3)
-                    np.random.uniform(0.6, 1.0),    # weak count
-                    np.random.uniform(0.0, 0.2),    # min weak
-                    np.random.uniform(0.1, 0.3),    # avg weak
-                    # Time (3)
-                    np.random.uniform(0.7, 1.0),    # easy_time: 70-100% (chậm với easy)
-                    np.random.uniform(0.8, 1.0),    # medium_time: 80-100% (chậm với medium)
-                    np.random.uniform(0.9, 1.0),    # hard_time: 90-100% (rất chậm với hard)
+                  
+                    np.random.uniform(0.1, 0.4),    # accuracy
+                    np.random.uniform(0.01, 0.05),  # questions
+                    np.random.uniform(0.7, 1.0),    # hints
+                    np.random.uniform(1.3, 1.5),    # time
+                    
+                  
+                    np.random.uniform(0.3, 0.6),    # easy acc
+                    1.0,                            
+                    medium_acc,   
+                    medium_flag, 
+                    0.0,    
+                    0.0,                              
+                    
+                   
+                    np.random.uniform(0.7, 1.0),     # weak count
+                    np.random.uniform(0.0, 0.1),     # min weak
+                    np.random.uniform(0.05, 0.2),    # avg weak
+                    
+                    
+                    np.random.uniform(0.8, 1.0),     
+                    np.random.uniform(0.9, 1.0),     
+                    1.0,                              
                 ]
                 X_train.append(features[:16])
                 y_train.append(0)
                 
-            elif i < 80:  # GUIDED_PRACTICE
-                medium_acc = np.random.uniform(0.2, 0.6)
-                if medium_acc == 0.5:
-                    medium_flag = np.random.choice([0.0, 1.0], p=[0.6, 0.4])
+            elif i < 400: 
+               
+                medium_flag = np.random.choice([0.0, 1.0], p=[0.3, 0.7])
+                
+                hard_flag = np.random.choice([0.0, 1.0], p=[0.6, 0.4])
+                if medium_flag == 1:
+                    medium_acc = np.random.uniform(0.3, 0.5)
                 else:
-                    medium_flag = 1.0
-                    
-                hard_acc = np.random.uniform(0.0, 0.5)
-                if hard_acc == 0.5:
-                    hard_flag = np.random.choice([0.0, 1.0], p=[0.7, 0.3])
+                    medium_acc = 0.0
+                if hard_flag == 1:
+                    hard_acc = np.random.uniform(0.0, 0.3)
                 else:
-                    hard_flag = 1.0
+                    hard_acc = 0.0
+               
+                
                 features = [
-                    # Overall (4)
-                    np.random.uniform(0.4, 0.6),    # accuracy
-                    np.random.uniform(0.1, 0.25),  # questions
-                    np.random.uniform(0.2, 0.6),    # hints
-                    np.random.uniform(0.5, 1.0),    # time
-                    # Difficulty + flags (6)
-                    np.random.uniform(0.6, 0.8),    # easy acc
-                    1.0,       
-                    medium_acc,    # medium acc
-                    medium_flag,                            # medium flag
-                    hard_acc,    # hard acc
-                    hard_flag, # hard flag 
-                    # Weakness (3)
-                    np.random.uniform(0.4, 1.0),    # weak count
-                    np.random.uniform(0.3, 0.6),    # min weak
-                    np.random.uniform(0.2, 0.3),    # avg weak
-                    # Time (3)
-                    np.random.uniform(0.3, 0.6),    # easy_time: 70-100% (chậm với easy)
-                    np.random.uniform(0.5, 0.8),    # medium_time: 80-100% (chậm với medium)
-                    np.random.uniform(0.9, 1.0),    # hard_time: 90-100% (rất chậm với hard)
+                   
+                    np.random.uniform(0.4, 0.6),   
+                    np.random.uniform(0.05, 0.20),  
+                    np.random.uniform(0.3, 0.7),     
+                    np.random.uniform(0.7, 1.2),     
+                    
+                
+                    np.random.uniform(0.6, 0.85),   
+                    1.0,                              
+                    medium_acc,    
+                    medium_flag,           
+                    hard_acc,   
+                    hard_flag,                       
+                    
+                   
+                    np.random.uniform(0.5, 0.8),    
+                    np.random.uniform(0.2, 0.4),    
+                    np.random.uniform(0.15, 0.35),  
+                    
+                    # Time
+                    np.random.uniform(0.4, 0.7),    
+                    np.random.uniform(0.6, 0.9),    
+                    np.random.uniform(0.8, 1.0),    
                 ]
                 X_train.append(features[:16])
                 y_train.append(1)
                 
-            elif i < 120:  
-                medium_acc = np.random.uniform(0.5, 0.7)
-                if medium_acc == 0.5:
-                    medium_flag = np.random.choice([0.0, 1.0], p=[0.3, 0.7])
+            elif i < 600:  
+              
+                
+                medium_flag = np.random.choice([0.0, 1.0], p=[0.6, 0.4])
+                hard_flag = np.random.choice([0.0, 1.0], p=[0.2, 0.8])
+                
+                if medium_flag == 1:
+                    medium_acc =  np.random.uniform(0.5, 0.75)
                 else:
-                    medium_flag = 1.0
-                    
-                hard_acc = np.random.uniform(0.5, 0.8)
-                if hard_acc == 0.5:
-                    hard_flag = np.random.choice([0.0, 1.0], p=[0.7, 0.3])
+                    medium_acc = 0.0
+                
+                if hard_flag == 1:
+                    hard_acc =  np.random.uniform(0.3, 0.6)
                 else:
-                    hard_flag = 1.0
+                    hard_acc = 0.0
+                
                 features = [
-                    # Overall (4)
-                    np.random.uniform(0.6, 0.9),    # accuracy
-                    np.random.uniform(0.2, 0.35),  # questions
-                    np.random.uniform(0.0, 0.6),    # hints
-                    np.random.uniform(0.5, 1.0),    # time
-                    # Difficulty + flags (6)
-                    np.random.uniform(0.8, 1.0),    # easy acc
-                    1.0,       
-                    medium_acc,    # medium acc
-                    medium_flag,   #medium flag
-                    hard_acc,    # hard acc
-                    hard_flag, # hard flag 
-                    # Weakness (3)
-                    np.random.uniform(0.2, 0.4),    # weak count
-                    np.random.uniform(0.0, 0.4),    # min weak
-                    np.random.uniform(0.3, 0.6),    # avg weak
-                    # Time (3)
-                    np.random.uniform(0.1, 0.5),    # easy_time: 70-100% (chậm với easy)
-                    np.random.uniform(0.3, 0.8),    # medium_time: 80-100% (chậm với medium)
-                    np.random.uniform(0.5, 1.0),    # hard_time: 90-100% (rất chậm với hard)
+                  
+                    np.random.uniform(0.5, 0.75),   
+                    np.random.uniform(0.20, 0.35),   
+                    np.random.uniform(0.1, 0.5),     
+                    np.random.uniform(0.4, 0.8),     
+                    
+                    
+                    np.random.uniform(0.8, 1.0),   
+                    1.0,                              
+                    medium_acc,    
+                    medium_flag,                     
+                    hard_acc,    
+                    hard_flag,                        
+                    
+                   
+                    np.random.uniform(0.2, 0.5),    
+                    np.random.uniform(0.3, 0.5),     
+                    np.random.uniform(0.4, 0.6),     
+                    
+                  
+                    np.random.uniform(0.2, 0.5),     
+                    np.random.uniform(0.3, 0.7),    
+                    np.random.uniform(0.5, 0.9),   
                 ]
                 X_train.append(features[:16])
                 y_train.append(2)
-            elif i < 160:
-                medium_acc = np.random.uniform(0.6, 1.0)
-                if medium_acc == 0.5:
-                    medium_flag = np.random.choice([0.0, 1.0], p=[0.2, 0.8])
-                else:
-                    medium_flag = 1.0
-                    
-                hard_acc = np.random.uniform(0.6, 1.0)
-                if hard_acc == 0.5:
-                    hard_flag = np.random.choice([0.0, 1.0], p=[0.6, 0.4])
-                else:
-                    hard_flag = 1.0
+                
+            elif i < 800: 
+           
                 features = [
-                    # Overall (4)
-                    np.random.uniform(0.8, 1.0),    # accuracy
-                    np.random.uniform(0.3, 0.4),  # questions
-                    np.random.uniform(0.0, 0.3),    # hints
-                    np.random.uniform(0.3, 0.5),    # time
-                    # Difficulty + flags (6)
-                    np.random.uniform(0.8, 1.0),    # easy acc
-                    1.0,       
-                    medium_acc,    # medium acc
-                    medium_flag,   #medium flag
-                    hard_acc,    # hard acc
-                    hard_flag, # hard flag 
-                    # Weakness (3)
-                    np.random.uniform(0.0, 0.2),    # weak count
-                    np.random.uniform(0.0, 0.2),    # min weak
-                    np.random.uniform(0.0, 0.6),    # avg weak
-                    # Time (3)
-                    np.random.uniform(0.1, 0.5),    # easy_time: 70-100% (chậm với easy)
-                    np.random.uniform(0.1, 0.5),    # medium_time: 80-100% (chậm với medium)
-                    np.random.uniform(0.2, 0.6),    # hard_time: 90-100% (rất chậm với hard)
+                   
+                    np.random.uniform(0.75, 0.90),  
+                    np.random.uniform(0.35, 0.45),  
+                    np.random.uniform(0.0, 0.3),     
+                    np.random.uniform(0.2, 0.5),    
+                    
+                    
+                    np.random.uniform(0.9, 1.0),     
+                    1.0,                             
+                    np.random.uniform(0.75, 0.95), 
+                    1.0,                            
+                    np.random.uniform(0.6, 0.85),    
+                    1.0,                             
+                    
+                   
+                    np.random.uniform(0.0, 0.3),     
+                    np.random.uniform(0.5, 0.7),     
+                    np.random.uniform(0.6, 0.8),     
+                    
+                  
+                    np.random.uniform(0.1, 0.3),    
+                    np.random.uniform(0.15, 0.4),   
+                    np.random.uniform(0.2, 0.5),    
                 ]
                 X_train.append(features[:16])
                 y_train.append(3)
-            else:
-                medium_acc = np.random.uniform(0.5, 0.7)
-                if medium_acc == 0.5:
-                    medium_flag = np.random.choice([0.0, 1.0], p=[0.3, 0.7])
-                else:
-                    medium_flag = 1.0
-                    
-                hard_acc = np.random.uniform(0.5, 1.0)
-                if hard_acc == 0.5:
-                    hard_flag = np.random.choice([0.0, 1.0], p=[0.7, 0.3])
-                else:
-                    hard_flag = 1.0
+                
+            else:  
+               
                 features = [
-                    # Overall (4)
-                    np.random.uniform(0.6, 0.9),    # accuracy
-                    np.random.uniform(0.2, 0.35),  # questions
-                    np.random.uniform(0.0, 0.6),    # hints
-                    np.random.uniform(0.5, 1.0),    # time
-                    # Difficulty + flags (6)
-                    np.random.uniform(0.8, 1.0),    # easy acc
-                    1.0,       
-                    medium_acc,    # medium acc
-                    medium_flag,   #medium flag
-                    hard_acc,    # hard acc
-                    hard_flag, # hard flag 
-                    # Weakness (3)
-                    np.random.uniform(0.2, 0.4),    # weak count
-                    np.random.uniform(0.0, 0.4),    # min weak
-                    np.random.uniform(0.3, 0.6),    # avg weak
-                    # Time (3)
-                    np.random.uniform(0.1, 0.5),    
-                    np.random.uniform(0.3, 0.8),   
-                    np.random.uniform(0.5, 1.0),    
+                 
+                    np.random.uniform(0.6, 0.85),    # accuracy: trung bình-tốt
+                    np.random.uniform(0.25, 0.40),   # questions: trung bình-nhiều
+                    np.random.uniform(0.1, 0.4),     # hints: ít-trung bình
+                    np.random.uniform(0.3, 0.7),     # time: biến động
+                    
+                    
+                    np.random.uniform(0.85, 1.0),   
+                    1.0,                             
+                    np.random.uniform(0.6, 0.85),    
+                    np.random.choice([0.0, 1.0], p=[0.3, 0.7]),                              
+                    np.random.uniform(0.4, 0.75),    
+                    np.random.choice([0.0, 1.0], p=[0.1, 0.9]),  
+                    
+                    
+                    np.random.uniform(0.1, 0.4),    
+                    np.random.uniform(0.3, 0.6),    
+                    np.random.uniform(0.5, 0.7),    
+                    
+                  
+                    np.random.uniform(0.15, 0.4),    
+                    np.random.uniform(0.25, 0.6),    
+                    np.random.uniform(0.4, 0.8),    
                 ]
                 X_train.append(features[:16])
                 y_train.append(4)
-                
+        
+        # Convert to numpy arrays
         X_train = np.array(X_train)
         y_train = np.array(y_train)
         
-        X_scaled = self.scaler.fit_transform(X_train)
-        self.model.fit(X_scaled, y_train)
+        # Split data for evaluation
+        X_train_split, X_test_split, y_train_split, y_test_split = train_test_split(
+            X_train, y_train, test_size=0.2, random_state=42, stratify=y_train
+        )
+        
+        # Scale features
+        X_train_scaled = self.scaler.fit_transform(X_train_split)
+        X_test_scaled = self.scaler.transform(X_test_split)
+        
+        
+        # Thử với RandomForest thay vì GradientBoosting để có độ chính xác cao hơn
+        self.model = RandomForestClassifier(
+            n_estimators=200,           # Tăng số lượng trees
+            max_depth=15,               # Độ sâu tối đa
+            min_samples_split=5,        # Số mẫu tối thiểu để split
+            min_samples_leaf=2,         # Số mẫu tối thiểu ở leaf
+            max_features='sqrt',        # Số features khi split
+            random_state=42,
+            n_jobs=-1,                  # Sử dụng tất cả CPU cores
+            class_weight='balanced'     # Cân bằng các class
+        )
+        
+        # Train model
+        self.model.fit(X_train_scaled, y_train_split)
         self.is_trained = True
+        
+        # Đánh giá
+        y_pred = self.model.predict(X_test_scaled)
+        
+        print("\n📊 Model Evaluation:")
+        print(f"   Accuracy: {accuracy_score(y_test_split, y_pred):.2%}")
+        print("\n   Classification Report:")
+        target_names = [self.STRATEGIES[i] for i in sorted(self.STRATEGIES.keys())]
+
+        print(classification_report(
+            y_test_split, 
+            y_pred, 
+            target_names=target_names, 
+            digits=3
+        ))
+        print("\n   Confusion Matrix:")
+        print(confusion_matrix(y_test_split, y_pred))
+        
+        # Feature importance analysis
+        feature_names = [
+            'accuracy', 'questions', 'hints', 'time',
+            'easy_acc', 'easy_flag', 'medium_acc', 'medium_flag',
+            'hard_acc', 'hard_flag', 'weak_count', 'min_weak',
+            'avg_weak', 'easy_time', 'medium_time', 'hard_time'
+        ]
+        
+        feature_importance = pd.DataFrame({
+            'feature': feature_names,
+            'importance': self.model.feature_importances_
+        }).sort_values('importance', ascending=False)
+        
+        print("\n🔍 Top 5 Most Important Features:")
+        for idx, row in feature_importance.head(5).iterrows():
+            print(f"   {row['feature']}: {row['importance']:.3f}")
+        
+        cv_scores = cross_val_score(self.model, X_train_scaled, y_train_split, 
+                                    cv=5, scoring='accuracy')
+        print(f"\n📈 Cross-validation Accuracy: {cv_scores.mean():.2%} (+/- {cv_scores.std() * 2:.2%})")
+        
+        return self.model
                 
+    # def predict_strategy(self, features: np.array) -> Tuple[str, float, Dict]:
+    #     """Predict learning strategy with improved rules and model integration"""
+    #     if not self.is_trained:
+    #         self.train_model()
+        
+    #     features = np.array(features, dtype=float).flatten()
+    #     accuracy = features[0]
+        
+    #     # Enhanced rules-based system with more conditions
+    #     additional_info = {
+    #         'prediction_method': 'rules_based',
+    #         'reason': '',
+    #         'confidence_factors': []
+    #     }
+        
+
+    #     if accuracy < 0.3:
+    #         additional_info['reason'] = 'Very low accuracy - requires intensive foundation building'
+    #         additional_info['confidence_factors'] = ['accuracy_below_30_percent']
+    #         return 'INTENSIVE_FOUNDATION', 0.95, additional_info
+        
+ 
+    #     elif accuracy >= 0.3 and accuracy < 0.5:
+    #         additional_info['reason'] = 'Low-medium accuracy - guided practice recommended'
+    #         additional_info['confidence_factors'] = ['accuracy_30_to_50_percent']
+    #         return 'GUIDED_PRACTICE', 0.90, additional_info
+        
+      
+    #     elif accuracy >= 0.5 and accuracy < 0.7:
+    #         additional_info['reason'] = 'Medium accuracy - adaptive learning approach'
+    #         additional_info['confidence_factors'] = ['accuracy_50_to_70_percent']
+    #         return 'ADAPTIVE_LEARNING', 0.85, additional_info
+        
+        
+    #     elif accuracy >= 0.7 and accuracy < 0.9:
+    #         additional_info['reason'] = 'High accuracy - challenge mode appropriate'
+    #         additional_info['confidence_factors'] = ['accuracy_70_to_90_percent']
+    #         return 'CHALLENGE_MODE', 0.90, additional_info
+        
+
+    #     elif accuracy >= 0.9:
+    #         additional_info['reason'] = 'Very high accuracy - mixed approach for continued growth'
+    #         additional_info['confidence_factors'] = ['accuracy_above_90_percent']
+    #         return 'MIXED_APPROACH', 0.88, additional_info
+        
+
+    #     try:
+    #         features_scaled = self.scaler.transform(features.reshape(1, -1))
+    #         strategy_id = self.model.predict(features_scaled)[0]
+    #         probabilities = self.model.predict_proba(features_scaled)[0]
+            
+    #         strategy = self.STRATEGIES[strategy_id]
+    #         confidence = float(probabilities[strategy_id])
+            
+    #         additional_info.update({
+    #             'prediction_method': 'ml_model',
+    #             'reason': f'ML model prediction based on feature analysis',
+    #             'confidence_factors': ['ml_model_prediction'],
+    #             'all_probabilities': {
+    #                 self.STRATEGIES[i]: float(prob) 
+    #                 for i, prob in enumerate(probabilities)
+    #             }
+    #         })
+            
+    #         return strategy, confidence, additional_info
+            
+    #     except Exception as e:
+    #         # Final fallback
+    #         additional_info.update({
+    #             'prediction_method': 'fallback',
+    #             'reason': f'Fallback prediction due to error: {str(e)}',
+    #             'confidence_factors': ['fallback_default'],
+    #             'error': str(e)
+    #         })
+    #         return 'ADAPTIVE_LEARNING', 0.5, additional_info
+    
+    
     def predict_strategy(self, features: np.array) -> Tuple[str, float, Dict]:
-        """Predict learning strategy with rules-based override"""
         if not self.is_trained:
             self.train_model()
-        
+
         features = np.array(features, dtype=float).flatten()
-        accuracy = features[0]
-        # print(features.reshape(1, -1))
-        
-        
-        # hint_usage = features[0]
-        
-        # Rules-based override for clear cases
-        if accuracy < 0.4:
-            return 'INTENSIVE_FOUNDATION', 0.95, {'reason': 'Very low accuracy'}
-        elif accuracy > 0.5:
-            return 'CHALLENGE_MODE', 0.90, {'reason': 'High performance'}
-        elif accuracy > 0.7 and accuracy <= 0.85:
-            return 'ADAPTIVE_LEARNING', 0.85, {'reason': 'Good performance'}
-        
-        # Otherwise use ML model
-        features_scaled = self.scaler.transform(features.reshape(1, -1))
-        # print("here", features_scaled)
-        strategy_id = self.model.predict(features_scaled)[0]
-        # print(strategy_id)
-        probabilities = self.model.predict_proba(features_scaled)[0]
-        # print(probabilities)
-        
-        strategy = self.STRATEGIES[strategy_id]
-        confidence = probabilities[strategy_id]
-        
-        return strategy, confidence, {
-            'all_probabilities': {
-                self.STRATEGIES[i]: float(prob) 
-                for i, prob in enumerate(probabilities)
+
+        # Safety check cực đoan
+        if features[0] < 0.1:
+            return 'INTENSIVE_FOUNDATION', 0.99, {
+                'prediction_method': 'safety_rule',
+                'reason': 'Accuracy cực thấp (<10%)',
+                'confidence_factors': ['accuracy_below_10']
             }
-        }
+
+        try:
+            features_scaled = self.scaler.transform(features.reshape(1, -1))
+            strategy_id = self.model.predict(features_scaled)[0]
+            probabilities = self.model.predict_proba(features_scaled)[0]
+
+            strategy = self.STRATEGIES[strategy_id]
+            confidence = float(probabilities[strategy_id])
+            print(f"🔮 Dự đoán: {strategy} (Độ tin cậy: {confidence:.2%})")
+            return strategy, confidence, {
+                'prediction_method': 'ml_model',
+                'reason': strategy,
+                'confidence_factors': ['ml_prediction'],
+                'all_probabilities': {
+                    self.STRATEGIES[i]: float(prob) for i, prob in enumerate(probabilities)
+                }
+            }
+
+        except Exception as e:
+            return 'ADAPTIVE_LEARNING', 0.5, {
+                'prediction_method': 'fallback',
+                'reason': f'Lỗi khi predict: {e}',
+                'confidence_factors': ['fallback_default']
+            }
     
     def save_model(self, filepath: str):
         """
@@ -857,34 +1012,7 @@ class ContentRecommender:
                 # Limit recommendations
         return recommendations[:5]
         
-        # # Determine target courses based on categories
-        # target_courses = []
-        # if weak_categories:
-        #     target_courses = [cat['course_name'] if isinstance(cat, dict) else cat for cat in weak_categories[:3]]
-        # elif avd_categories:  
-        #     target_courses = [cat['course_name'] if isinstance(cat, dict) else cat for cat in avd_categories[:3]]
-        
-        # # Build query conditions
-        # if target_courses and actual_levels:
-        #     course_conditions = " OR ".join([f"cr.title = '{course}'" for course in target_courses])
-        #     level_conditions = " OR ".join([f"cr.level = '{level}'" for level in actual_levels])
-            
-        #     where_clause = f"""
-        #     JOIN courses cr ON ls.courseId = cr.id
-        #     WHERE ({course_conditions}) AND ({level_conditions})
-        #     ORDER BY ls.id
-        #     """
-            
-        #     lessons = db_manager.select("lessons ls", "ls.title AS lesson_title", where_clause)
-            
-        #     # Process lessons into recommendations
-        #     for lesson in lessons:
-        #         recommendations.append({
-        #             'lesson_title': lesson['lesson_title'],
-        #             'strategy': strategy,
-        #             'focus': strategy_criteria['focus'],
-        #             'order': strategy_criteria['order']
-        #         })
+      
         
         
     def _calculate_priority_from_performance(self, lesson_dict: Dict, 
@@ -970,13 +1098,7 @@ class Learning_assessment:
             
         }
         
-    # def _get_activity(self, user_id: str):
-    #     where_clause = f""" 
-    #     JOIN learning_sessions lrs ON lrs.sessionId = lra.sessionId AND lrs.studentId = '{user_id}'
-    #     GROUP BY sessionId, studentId
-    #     """
-        
-        # activity = self.db.select("learning_activities lra", "")
+  
         
         
     
@@ -1474,13 +1596,12 @@ class RandomForestLearninAttube:
         labels = sorted(set(y_val))
         target_names = [self.Learning_attitude[i] for i in labels]
         
-        print("Best parameters:", grid_search.best_params_)
-        print("\nClassification Report:")
-        print(classification_report(
-            y_val, y_pred, target_names=target_names, digits=2
-        ))
+        # print("Best parameters:", grid_search.best_params_)
+        # print("\nClassification Report:")
+        # print(classification_report(
+        #     y_val, y_pred, target_names=target_names, digits=2
+        # ))
         
-        # Feature importance
         feature_names = [
             'sum_days_study', 'mean_days_study', 'std_days_study',
             'mean_gap_session', 'std_days_gap_off', 'total_timespent',
@@ -1751,227 +1872,37 @@ class AITrackingDataCollector:
             # 1. BASIC PROGRESS DATA
             'basic_progress': self._get_basic_progress(user_id, course_id),
             
-            # # 2. LEARNING ACTIVITIES - Dữ liệu hành vi chi tiết
+            # 2. LEARNING ACTIVITIES - Dữ liệu hành vi chi tiết
             # 'learning_activities': self._get_learning_activities(user_id, course_id),
             
-            # # 3. LEARNING SESSIONS - Phiên học tập
+            # 3. LEARNING SESSIONS - Phiên học tập
             # 'learning_sessions': self._get_learning_sessions(user_id),
             
-            # # 4. ASSESSMENT PERFORMANCE - Kết quả kiểm tra
+            # 4. ASSESSMENT PERFORMANCE - Kết quả kiểm tra
             # 'assessment_performance': self._get_assessment_performance(user_id, course_id),
             
-            # # 5. TIME PATTERNS - Mô hình thời gian học
-            'time_patterns': self._get_time_patterns(user_id),
+            # 5. TIME PATTERNS - Mô hình thời gian học
+            # 'time_patterns': self._get_time_patterns(user_id),
             
-            # # 6. ENGAGEMENT METRICS - Chỉ số tương tác
+            # 6. ENGAGEMENT METRICS - Chỉ số tương tác
             # 'engagement_metrics': self._get_engagement_metrics(user_id, course_id),
             
-            # # 7. LEARNING STYLE - Phong cách học tập
+            # 7. LEARNING STYLE - Phong cách học tập
             # 'learning_style': self._get_learning_style(user_id),
             
-            # # 8. CONTENT INTERACTION - Tương tác với nội dung
+            # 8. CONTENT INTERACTION - Tương tác với nội dung
             # 'content_interaction': self._get_content_interaction(user_id, course_id),
             
-            # # 9. SOCIAL INTERACTION - Tương tác xã hội
+            # 9. SOCIAL INTERACTION - Tương tác xã hội
             # 'social_interaction': self._get_social_interaction(user_id),
             
-            # # 10. HISTORICAL ANALYTICS - Dữ liệu phân tích lịch sử
+            # 10. HISTORICAL ANALYTICS - Dữ liệu phân tích lịch sử
             # 'historical_analytics': self._get_historical_analytics(user_id)
         }
         
         return data
     
-    def _get_basic_progress(self, user_id: str, course_id: str = None):
-        where_claure = f"""
-        JOIN courses c ON e.courseId = c.id WHERE e.studentId = '{user_id}' 
-        {f"AND e.courseId = '{course_id}'" if course_id else ""} 
-        ORDER BY e.enrollmentDate DESC
-        """
-        enrollments = self.db.select("enrollments e", "e.*, c.*", where_claure)
-        
-        where_claure_ls = f""" 
-        JOIN lessons l ON lp.lessonId = l.id WHERE lp.studentId = '{user_id}'
-        {f"AND EXISTS (SELECT 1 FROM enrollments e WHERE e.id = lp.enrollmentId AND e.courseId = '{course_id}')" if course_id else ""}
-        ORDER BY lp.lastAccessedAt DESC
-        """
-        
-        lesson_progress = self.db.select("lesson_progress lp", "lp.*", where_claure_ls)
-        
-        analysis = self._analyze_basic_progress(enrollments, lesson_progress)
-        
-        return {
-            'enrollments': enrollments,
-            'lesson_progress': lesson_progress,
-            'analysis': analysis
-        }
-        
-    def _get_learning_activities(self, user_id: str, course_id: str = None):
-        where_clause = f""" 
-        WHERE la.studentId = '{user_id}' {f"AND la.courseId = '{course_id}'" if course_id else ""}
-        ORDER BY la.timestamp DESC LIMIT 1000
-        """
-        
-        activities = self.db.select("learning_activities la","la.*",where_clause)
-        
-        activity_analysis = self._analyze_activity_patterns(activities)
-        
-        return {
-            'raw_activities': activities,
-            'patterns': activity_analysis
-        }
-        
-        
-    def _get_learning_sessions(self, user_id: str):
-        where_clause = f" WHERE ls.studentId = '{user_id}' ORDER BY ls.startTime DESC LIMIT 50 "
-        
-        sessions = self.db.select("learning_sessions ls", "ls.*", where_clause)
-        
-         
-        return {
-            'recent_sessions': sessions,
-            'session_analysis': self._analyze_sessions(sessions)
-        }
-        
-    def _get_time_patterns(self, user_id: str):
-        where_clause = f" WHERE la.studentId = '{user_id}' ORDER BY la.date DESC LIMIT 30"
-         
-        analytics = self.db.select("learning_analytics la", " la.*", where_clause)
-        
-        return{
-            'daily_analytics': analytics,
-            'time_preferences': self._analyze_time_preferences(analytics)
-        }
-        
-        
-        
-    def _analyze_time_preferences(self, analytics):
-        """Phân tích preferences thời gian"""
-        if not analytics:
-            return {}
-            
-        df = pd.DataFrame(analytics)
-        
-        # print(df['engagementScore'])  
-        
-        analysis = {
-            'avg_daily_time': df['totalTimeSpent'].mean() if 'totalTimeSpent' in df.columns else 0,
-            'avg_engagement_score': df['engagementScore'].mean() if 'engagementScore' in df.columns else 0,
-            'dominant_performance_level': 'unknown'
-        }
-        
-        # Get dominant performance level
-        if 'performanceLevel' in df.columns and not df.empty:
-            mode_result = df['performanceLevel'].mode()
-            if not mode_result.empty:
-                analysis['dominant_performance_level'] = mode_result[0]
-        
-        if 'mostActiveHour' in df.columns:
-            analysis['preferred_hours'] = df['mostActiveHour'].value_counts().to_dict()
-            
-        if 'learningPattern' in df.columns:
-            analysis['learning_patterns'] = df['learningPattern'].value_counts().to_dict()
-            
-        return analysis
-        
-    
-    def _analyze_sessions(self, sessions):
-        """Phân tích sessions"""
-        if not sessions:
-            return {}
-            
-        df = pd.DataFrame(sessions)
-        
-        analysis = {
-            'total_sessions': len(sessions),
-            'avg_session_duration': df['duration'].mean() if 'duration' in df.columns else 0,
-            'avg_activities_per_session': df['activitiesCount'].mean() if 'activitiesCount' in df.columns else 0,
-            # 'avg_page_views': df['pageViews'].mean() if 'pageViews' in df.columns else 0
-        }
-        
-        # Device analysis
-        if 'deviceType' in df.columns:
-            analysis['device_preferences'] = df['deviceType'].value_counts().to_dict()
-            
-        return analysis
-        
-    def _analyze_activity_patterns(self, activities):
-        """Phân tích mô hình từ learning activities"""
-        if not activities:
-            return {}
-            
-        df = pd.DataFrame(activities)
-        
-        patterns = {
-            'activity_distribution': df['activityType'].value_counts().to_dict() if 'activityType' in df.columns else {},
-            'device_usage': df['deviceType'].value_counts().to_dict() if 'deviceType' in df.columns else {},
-            'browser_usage': df['browser'].value_counts().to_dict() if 'browser' in df.columns else {}
-        }
-        
-        # Phân tích thời gian nếu có duration
-        if 'duration' in df.columns and 'activityType' in df.columns:
-            patterns['avg_duration_by_type'] = df.groupby('activityType')['duration'].mean().to_dict()
-        
-        # Phân tích theo giờ nếu có timestamp
-        if 'timestamp' in df.columns:
-            df['hour'] = pd.to_datetime(df['timestamp']).dt.hour
-            patterns['hourly_patterns'] = df['hour'].value_counts().to_dict()
-        
-        return patterns
-        
-    def _analyze_basic_progress(self, enrollments, lesson_progress):
-        """Phân tích dữ liệu cơ bản"""
-        if not enrollments:
-            return {}
-            
-        enrollments_df = pd.DataFrame(enrollments)
-        lesson_df = pd.DataFrame(lesson_progress) if lesson_progress else pd.DataFrame()
-        
-        # Thống kê enrollments
-        total_enrollments = len(enrollments_df)
-        completed_courses = len(enrollments_df[enrollments_df['status'] == 'completed'])
-        dropped_courses = len(enrollments_df[enrollments_df['status'] == 'dropped'])
-        avg_progress = enrollments_df['progressPercentage'].mean()
-        
-        # Thống kê lessons
-        lesson_stats = {}
-        if not lesson_df.empty:
-            total_lessons = len(lesson_df)
-            completed_lessons = len(lesson_df[lesson_df['status'] == 'completed'])
-            skipped_lessons = len(lesson_df[lesson_df['isSkipped'] == 1])
-            avg_lesson_progress = lesson_df['progressPercentage'].mean()
-            
-            lesson_stats = {
-                'total_lessons_accessed': total_lessons,
-                'completed_lessons': completed_lessons,
-                'skipped_lessons': skipped_lessons,
-                'completion_rate': (completed_lessons / total_lessons * 100) if total_lessons > 0 else 0,
-                'skip_rate': (skipped_lessons / total_lessons * 100) if total_lessons > 0 else 0,
-                'avg_lesson_progress': avg_lesson_progress
-            }
-        
-        # Warnings
-        warnings = []
-        if total_enrollments > 0:
-            dropout_rate = (dropped_courses / total_enrollments * 100)
-            if dropout_rate > 60:
-                warnings.append("Tỷ lệ bỏ học cao (>60%)")
-        
-        if lesson_stats.get('skip_rate', 0) > 50:
-            warnings.append("Tỷ lệ skip bài học cao (>50%)")
-        
-        if avg_progress < 30:
-            warnings.append("Tiến độ học tập chậm (<30%)")
-            
-        return {
-            'total_enrollments': total_enrollments,
-            'completed_courses': completed_courses,
-            'dropped_courses': dropped_courses,
-            'dropout_rate': (dropped_courses / total_enrollments * 100) if total_enrollments > 0 else 0,
-            'avg_course_progress': avg_progress,
-            'lesson_statistics': lesson_stats,
-            'warnings': warnings
-        }
-        
+
     
         
     
@@ -2014,23 +1945,23 @@ if __name__ == "__main__":
         # print(f"🔍 test features: {test}")
         # print("🔍 Calling predict_strategy...")
         result = Ai.predict_strategy(test)
-        print(f"🔍 Raw result: {result}")
+        # print(f"🔍 Raw result: {result}")
         # print(f"🔍 Type of result: {type(result)}")
 
         strategy, confidence, sdf = result
         recomment = cm.recommend_lessons(db_manager, strategy, analysis)
         learning = Learning_assessment(db_manager)
         tesst = learning.learning_analytics_data("user-student-14", "lesson-html-tags")
-        rd = RandomForestLearninAttube()
-        t = rd.extract_features_lesson(tesst)
-        tr = rd.train()
-        r = rd.predict(tesst, return_proba = True)
-        print("\n=== Prediction Result ===")
-        print(f"Predicted attitude: {r['attitude']}")
-        print(f"Confidence: {r['confidence']:.2%}")
-        print("\nProbabilities for each class:")
-        for attitude, prob in r['probabilities'].items():
-            print(f"  {attitude}: {prob:.2%}")
+        # rd = RandomForestLearninAttube()
+        # t = rd.extract_features_lesson(tesst)
+        # tr = rd.train()
+        # r = rd.predict(tesst, return_proba = True)
+        # print("\n=== Prediction Result ===")
+        # print(f"Predicted attitude: {r['attitude']}")
+        # print(f"Confidence: {r['confidence']:.2%}")
+        # print("\nProbabilities for each class:")
+        # for attitude, prob in r['probabilities'].items():
+        #     print(f"  {attitude}: {prob:.2%}")
         
      
         
@@ -2062,36 +1993,36 @@ if __name__ == "__main__":
         print(json.dumps(analysis.get("avd_categories", []), indent=2, ensure_ascii=False))
         
            # ===== MODEL SAVE/LOAD DEMO =====
-        print("\n" + "="*60)
-        print("🔧 DEMO: Model Save/Load Operations")
-        print("="*60)
+        # print("\n" + "="*60)
+        # print("🔧 DEMO: Model Save/Load Operations")
+        # print("="*60)
         
-        # Save models after training
-        print("\n1. Lưu models sau khi train...")
-        ModelManager.save_all_models(Ai, rd, "./models/")
+        # # Save models after training
+        # print("\n1. Lưu models sau khi train...")
+        # ModelManager.save_all_models(Ai, rd, "./models/")
         
-        # Show model info  
-        print("\n2. Thông tin models đã lưu:")
-        model_info = ModelManager.create_model_info("./models/")
-        print(json.dumps(model_info, indent=2, ensure_ascii=False, default=str))
+        # # Show model info  
+        # print("\n2. Thông tin models đã lưu:")
+        # model_info = ModelManager.create_model_info("./models/")
+        # print(json.dumps(model_info, indent=2, ensure_ascii=False, default=str))
         
-        # Load models from files
-        print("\n3. Load models từ files...")
-        loaded_strategy_ai, loaded_attitude_model = ModelManager.load_all_models("./models/")
+        # # Load models from files
+        # print("\n3. Load models từ files...")
+        # loaded_strategy_ai, loaded_attitude_model = ModelManager.load_all_models("./models/")
         
-        # Test loaded models
-        print("\n4. Test models đã được load:")
+        # # Test loaded models
+        # print("\n4. Test models đã được load:")
         
-        # Test LearningStrategyAI
-        loaded_result = loaded_strategy_ai.predict_strategy(test)
-        print(f"   LearningStrategyAI: {loaded_result[0]} (confidence: {loaded_result[1]:.2%})")
+        # # Test LearningStrategyAI
+        # loaded_result = loaded_strategy_ai.predict_strategy(test)
+        # print(f"   LearningStrategyAI: {loaded_result[0]} (confidence: {loaded_result[1]:.2%})")
         
-        # Test RandomForestLearninAttube  
-        loaded_attitude_result = loaded_attitude_model.predict(tesst, return_proba=True)
-        print(f"   RandomForestLearninAttube: {loaded_attitude_result['attitude']} (confidence: {loaded_attitude_result['confidence']:.2%})")
+        # # Test RandomForestLearninAttube  
+        # loaded_attitude_result = loaded_attitude_model.predict(tesst, return_proba=True)
+        # print(f"   RandomForestLearninAttube: {loaded_attitude_result['attitude']} (confidence: {loaded_attitude_result['confidence']:.2%})")
         
-        print("\n✅ Model save/load operations completed successfully!")
-        print("="*60)
+        # print("\n✅ Model save/load operations completed successfully!")
+        # print("="*60)
         
         # print(f"🔍 strategy after assignment: {strategy}")
         # print(f"🔍 confidence after assignment: {confidence}")
@@ -2099,25 +2030,25 @@ if __name__ == "__main__":
         # # print(f"🔍 analysis after assignment: {sdf}")
         # # # print(strategy)
         # # print(recomment[0])
-        # if recomment:
-        #     for idx, lesson in enumerate(recomment, 1):
-        #         # print(lesson)
-        #         print(lesson.get('lesson_id'))
-        #         print(f"\n{idx}. {lesson.get('title', 'N/A')}")
-        #         print(f"   📖  Khóa học: {lesson.get('course_title', 'N/A')}")
-        #         print(f"   🏷️  Danh mục: {lesson.get('category_name', 'N/A')}")
-        #         print(f"   ⭐  Độ ưu tiên: {lesson.get('priority_score', 0):.2f}")
-        #         print(f"   🤓  Độ khó: {lesson.get('difficulty')}")
-        #         print(f"   💡  Lý do: {lesson.get('recommendation_reason', 'N/A')}")
-        #         print(f"   💯  Tổng số câu hỏi của bài học: {lesson.get('total_question_lesson')}")
-        #         print(f"   🧠  Độ chính xác trong bài học: {lesson.get('lesson_accuracy')}%")
-        #         print(f"   🔗  Đường dẫn: {lesson.get('lesson_slug')}")
-        #         # Thông tin bổ sung nếu có
-        #         if 'error_count' in lesson:
-        #             print(f"   ❌  Số lỗi: {lesson['error_count']}")
-        #         if 'questions_wrong' in lesson:
-        #             # print(f"   ❓  Câu sai: {', '.join(lesson['questions_wrong'])}")
-        #             print(f"   ❓  Câu sai: {' -> '.join(f'{q['title']}' for q in lesson['questions_wrong'])}")
+        if recomment:
+            for idx, lesson in enumerate(recomment, 1):
+                # print(lesson)
+                # print(lesson.get('lesson_id'))
+                print(f"\n{idx}. {lesson.get('title', 'N/A')}")
+                print(f"   📖  Khóa học: {lesson.get('course_title', 'N/A')}")
+                print(f"   🏷️  Danh mục: {lesson.get('category_name', 'N/A')}")
+                print(f"   ⭐  Độ ưu tiên: {lesson.get('priority_score', 0):.2f}")
+                print(f"   🤓  Độ khó: {lesson.get('difficulty')}")
+                print(f"   💡  Lý do: {lesson.get('recommendation_reason', 'N/A')}")
+                print(f"   💯  Tổng số câu hỏi của bài học: {lesson.get('total_question_lesson')}")
+                print(f"   🧠  Độ chính xác trong bài học: {lesson.get('lesson_accuracy')}%")
+                print(f"   🔗  Đường dẫn: {lesson.get('lesson_slug')}")
+                # Thông tin bổ sung nếu có
+                if 'error_count' in lesson:
+                    print(f"   ❌  Số lỗi: {lesson['error_count']}")
+                if 'questions_wrong' in lesson:
+                    # print(f"   ❓  Câu sai: {', '.join(lesson['questions_wrong'])}")
+                    print(f"   ❓  Câu sai: {' -> '.join(f'{q['title']}' for q in lesson['questions_wrong'])}")
                     
         #         learner_data = {
         #             'lesson_id': lesson.get('lesson_id'),

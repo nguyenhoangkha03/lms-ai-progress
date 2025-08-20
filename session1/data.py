@@ -6,6 +6,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import json
 from typing import Dict, List, Tuple
 from datetime import datetime
@@ -486,15 +487,15 @@ class LearningStrategyAI:
                     np.random.uniform(0.0, 0.5),    # medium acc
                     np.random.choice([0.0, 1.0], p=[0.6, 0.4]),                            # medium flag
                     np.random.uniform(0.0, 0.2),    # hard acc
-                    np.random.choice([0.0, 1.0], p=[0.7, 0.3]), # hard flag (maybe didn't try)
+                    np.random.choice([0.0, 1.0], p=[0.7, 0.3]), # hard flag 
                     # Weakness (3)
                     np.random.uniform(0.6, 1.0),    # weak count
                     np.random.uniform(0.0, 0.2),    # min weak
                     np.random.uniform(0.1, 0.3),    # avg weak
                     # Time (3)
-                    np.random.uniform(0.7, 1.0),    # easy_time: 70-100% (chậm với easy)
-                    np.random.uniform(0.8, 1.0),    # medium_time: 80-100% (chậm với medium)
-                    np.random.uniform(0.9, 1.0),    # hard_time: 90-100% (rất chậm với hard)
+                    np.random.uniform(0.7, 1.0),    # easy_time: 70-100% 
+                    np.random.uniform(0.8, 1.0),    # medium_time: 80-100% 
+                    np.random.uniform(0.9, 1.0),    # hard_time: 90-100%
                 ]
                 X_train.append(features[:16])
                 y_train.append(0)
@@ -651,13 +652,34 @@ class LearningStrategyAI:
         X_scaled = self.scaler.fit_transform(X_train)
         self.model.fit(X_scaled, y_train)
         self.is_trained = True
+        
+        X_train_split, X_test_split, y_train_split, y_test_split = train_test_split(
+            X_train, y_train, test_size=0.2, random_state=42, stratify=y_train
+        )
+        
+        X_train_scaled = self.scaler.fit_transform(X_train_split)
+        X_test_scaled = self.scaler.transform(X_test_split)
+
+        # Train model
+        self.model.fit(X_train_scaled, y_train_split)
+        self.is_trained = True
+
+        # Đánh giá
+        y_pred = self.model.predict(X_test_scaled)
+        
+        print("\n📊 Model Evaluation:")
+        print(f"   Accuracy: {accuracy_score(y_test_split, y_pred):.2%}")
+        print("\n   Classification Report:")
+        print(classification_report(y_test_split, y_pred, digits=3))
+        print("\n   Confusion Matrix:")
+        print(confusion_matrix(y_test_split, y_pred))
                 
     def predict_strategy(self, features: np.array) -> Tuple[str, float, Dict]:
         """Predict learning strategy with rules-based override"""
         if not self.is_trained:
             self.train_model()
         
-        # Extract key metrics
+        features = np.array(features, dtype=float).flatten()
         accuracy = features[0]
         # print(features.reshape(1, -1))
         
@@ -689,6 +711,56 @@ class LearningStrategyAI:
                 for i, prob in enumerate(probabilities)
             }
         }
+    
+    def save_model(self, filepath: str):
+        """
+        Lưu model vào file
+        """
+        if not self.is_trained:
+            raise ValueError("Model chưa được train. Hãy gọi train_model() trước!")
+        
+        model_data = {
+            'model': self.model,
+            'scaler': self.scaler,
+            'is_trained': self.is_trained,
+            'strategies': self.STRATEGIES,
+            'model_type': 'LearningStrategyAI'
+        }
+        
+        # Tạo thư mục nếu chưa có
+        os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
+        
+        joblib.dump(model_data, filepath)
+        print(f"✅ Model đã được lưu tại: {filepath}")
+    
+    def load_model(self, filepath: str):
+        """
+        Load model từ file
+        """
+        if not os.path.exists(filepath):
+            raise FileNotFoundError(f"File không tồn tại: {filepath}")
+        
+        model_data = joblib.load(filepath)
+        
+        # Kiểm tra loại model
+        if model_data.get('model_type') != 'LearningStrategyAI':
+            raise ValueError("File không phải của LearningStrategyAI model")
+        
+        self.model = model_data['model']
+        self.scaler = model_data['scaler']
+        self.is_trained = model_data['is_trained']
+        
+        print(f"✅ Model đã được load từ: {filepath}")
+        
+    @classmethod
+    def load_pretrained(cls, filepath: str):
+        """
+        Tạo instance mới và load model
+        """
+        instance = cls()
+        instance.load_model(filepath)
+        return instance
+    
 class ContentRecommender:
     def recommend_lessons(self, db_manager: DatabaseManager, strategy: str, user_performance: Dict) -> List[Dict]:
         recommendations = []
@@ -1195,7 +1267,7 @@ class RandomForestLearninAttube:
                     timespent = np.clip(timespent, 600, 4500).astype(int)
                     total_timespent = sum(timespent)
                     mean_timespent = round(np.mean(timespent), 2)
-                    std_timespent = round(np.std(timespent) * 1.5, 2)  # Độ lệch lớn
+                    std_timespent = round(np.std(timespent) * 1.5, 2)  
                     
                  
                     duration = timespent * np.random.uniform(2, 4, size=len(timespent))
@@ -1363,7 +1435,7 @@ class RandomForestLearninAttube:
                     estimated_total = 720 * sum_days_study
                     percent_time_study = round((total_timespent / estimated_total) * 100, 2)
                 
-                # Create feature vector
+                
                 features = [
                     sum_days_study,           # 1. Tổng số ngày học
                     mean_days_study,          # 2. Trung bình ngày học
@@ -1424,13 +1496,12 @@ class RandomForestLearninAttube:
         labels = sorted(set(y_val))
         target_names = [self.Learning_attitude[i] for i in labels]
         
-        print("Best parameters:", grid_search.best_params_)
-        print("\nClassification Report:")
-        print(classification_report(
-            y_val, y_pred, target_names=target_names, digits=2
-        ))
+        # print("Best parameters:", grid_search.best_params_)
+        # print("\nClassification Report:")
+        # print(classification_report(
+        #     y_val, y_pred, target_names=target_names, digits=2
+        # ))
         
-        # Feature importance
         feature_names = [
             'sum_days_study', 'mean_days_study', 'std_days_study',
             'mean_gap_session', 'std_days_gap_off', 'total_timespent',
@@ -1530,7 +1601,158 @@ class RandomForestLearninAttube:
         
         
         return result
-        # return True
+    
+    def save_model(self, filepath: str):
+        """
+        Lưu RandomForestLearninAttube model vào file
+        """
+        if not self.is_trained:
+            raise ValueError("Model chưa được train. Hãy gọi train() trước!")
+        
+        model_data = {
+            'model': self.model,
+            'scaler': self.scaler,
+            'is_trained': self.is_trained,
+            'learning_attitude': self.Learning_attitude,
+            'model_type': 'RandomForestLearninAttube'
+        }
+        
+        # Tạo thư mục nếu chưa có
+        os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
+        
+        joblib.dump(model_data, filepath)
+        print(f"✅ RandomForestLearninAttube model đã được lưu tại: {filepath}")
+    
+    def load_model(self, filepath: str):
+        """
+        Load RandomForestLearninAttube model từ file
+        """
+        if not os.path.exists(filepath):
+            raise FileNotFoundError(f"File không tồn tại: {filepath}")
+        
+        model_data = joblib.load(filepath)
+        
+        # Kiểm tra loại model
+        if model_data.get('model_type') != 'RandomForestLearninAttube':
+            raise ValueError("File không phải của RandomForestLearninAttube model")
+        
+        self.model = model_data['model']
+        self.scaler = model_data['scaler']
+        self.is_trained = model_data['is_trained']
+        
+        print(f"✅ RandomForestLearninAttube model đã được load từ: {filepath}")
+        
+    @classmethod
+    def load_pretrained(cls, filepath: str):
+        """
+        Tạo instance mới và load model
+        """
+        instance = cls()
+        instance.load_model(filepath)
+        return instance
+    
+class ModelManager:
+    """
+    Quản lý việc lưu và load tất cả models trong hệ thống
+    """
+    
+    @staticmethod
+    def save_all_models(learning_strategy_ai: LearningStrategyAI, 
+                       random_forest_attitude: RandomForestLearninAttube,
+                       base_path: str = "./models/"):
+        """
+        Lưu tất cả models vào thư mục
+        """
+        if not os.path.exists(base_path):
+            os.makedirs(base_path, exist_ok=True)
+        
+        # Save LearningStrategyAI
+        if learning_strategy_ai.is_trained:
+            strategy_path = os.path.join(base_path, "learning_strategy_ai.joblib")
+            learning_strategy_ai.save_model(strategy_path)
+        else:
+            print("⚠️ LearningStrategyAI chưa được train, skip save")
+            
+        # Save RandomForestLearninAttube  
+        if random_forest_attitude.is_trained:
+            attitude_path = os.path.join(base_path, "random_forest_attitude.joblib")
+            random_forest_attitude.save_model(attitude_path)
+        else:
+            print("⚠️ RandomForestLearninAttube chưa được train, skip save")
+            
+        print(f"\n🎯 Tất cả models đã được lưu trong: {base_path}")
+    
+    @staticmethod
+    def load_all_models(base_path: str = "./models/") -> tuple:
+        """
+        Load tất cả models từ thư mục
+        
+        Returns:
+            tuple: (LearningStrategyAI, RandomForestLearninAttube)
+        """
+        strategy_path = os.path.join(base_path, "learning_strategy_ai.joblib")
+        attitude_path = os.path.join(base_path, "random_forest_attitude.joblib")
+        
+        learning_strategy_ai = None
+        random_forest_attitude = None
+        
+        # Load LearningStrategyAI
+        if os.path.exists(strategy_path):
+            learning_strategy_ai = LearningStrategyAI.load_pretrained(strategy_path)
+        else:
+            print(f"⚠️ Không tìm thấy file: {strategy_path}")
+            learning_strategy_ai = LearningStrategyAI()
+            
+        # Load RandomForestLearninAttube
+        if os.path.exists(attitude_path):
+            random_forest_attitude = RandomForestLearninAttube.load_pretrained(attitude_path)
+        else:
+            print(f"⚠️ Không tìm thấy file: {attitude_path}")
+            random_forest_attitude = RandomForestLearninAttube()
+            
+        print(f"🔄 Models đã được load từ: {base_path}")
+        return learning_strategy_ai, random_forest_attitude
+    
+    @staticmethod
+    def create_model_info(base_path: str = "./models/") -> dict:
+        """
+        Tạo thông tin về các models đã lưu
+        """
+        info = {
+            'base_path': base_path,
+            'models': {},
+            'created_at': datetime.now().isoformat()
+        }
+        
+        # Check LearningStrategyAI
+        strategy_path = os.path.join(base_path, "learning_strategy_ai.joblib")
+        if os.path.exists(strategy_path):
+            stat = os.stat(strategy_path)
+            info['models']['learning_strategy_ai'] = {
+                'file_path': strategy_path,
+                'file_size_mb': round(stat.st_size / 1024 / 1024, 2),
+                'modified_at': datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                'exists': True
+            }
+        else:
+            info['models']['learning_strategy_ai'] = {'exists': False}
+            
+        # Check RandomForestLearninAttube
+        attitude_path = os.path.join(base_path, "random_forest_attitude.joblib")
+        if os.path.exists(attitude_path):
+            stat = os.stat(attitude_path)
+            info['models']['random_forest_attitude'] = {
+                'file_path': attitude_path,
+                'file_size_mb': round(stat.st_size / 1024 / 1024, 2),
+                'modified_at': datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                'exists': True
+            }
+        else:
+            info['models']['random_forest_attitude'] = {'exists': False}
+            
+        return info
+
+
     
     
             
@@ -1550,31 +1772,31 @@ class AITrackingDataCollector:
             # 1. BASIC PROGRESS DATA
             'basic_progress': self._get_basic_progress(user_id, course_id),
             
-            # # 2. LEARNING ACTIVITIES - Dữ liệu hành vi chi tiết
+            # 2. LEARNING ACTIVITIES - Dữ liệu hành vi chi tiết
             # 'learning_activities': self._get_learning_activities(user_id, course_id),
             
-            # # 3. LEARNING SESSIONS - Phiên học tập
+            # 3. LEARNING SESSIONS - Phiên học tập
             # 'learning_sessions': self._get_learning_sessions(user_id),
             
-            # # 4. ASSESSMENT PERFORMANCE - Kết quả kiểm tra
+            # 4. ASSESSMENT PERFORMANCE - Kết quả kiểm tra
             # 'assessment_performance': self._get_assessment_performance(user_id, course_id),
             
-            # # 5. TIME PATTERNS - Mô hình thời gian học
+            # 5. TIME PATTERNS - Mô hình thời gian học
             'time_patterns': self._get_time_patterns(user_id),
             
-            # # 6. ENGAGEMENT METRICS - Chỉ số tương tác
+            # 6. ENGAGEMENT METRICS - Chỉ số tương tác
             # 'engagement_metrics': self._get_engagement_metrics(user_id, course_id),
             
-            # # 7. LEARNING STYLE - Phong cách học tập
+            # 7. LEARNING STYLE - Phong cách học tập
             # 'learning_style': self._get_learning_style(user_id),
             
-            # # 8. CONTENT INTERACTION - Tương tác với nội dung
+            # 8. CONTENT INTERACTION - Tương tác với nội dung
             # 'content_interaction': self._get_content_interaction(user_id, course_id),
             
-            # # 9. SOCIAL INTERACTION - Tương tác xã hội
+            # 9. SOCIAL INTERACTION - Tương tác xã hội
             # 'social_interaction': self._get_social_interaction(user_id),
             
-            # # 10. HISTORICAL ANALYTICS - Dữ liệu phân tích lịch sử
+            # 10. HISTORICAL ANALYTICS - Dữ liệu phân tích lịch sử
             # 'historical_analytics': self._get_historical_analytics(user_id)
         }
         
@@ -1658,7 +1880,7 @@ class AITrackingDataCollector:
             'dominant_performance_level': 'unknown'
         }
         
-        # Get dominant performance level
+        
         if 'performanceLevel' in df.columns and not df.empty:
             mode_result = df['performanceLevel'].mode()
             if not mode_result.empty:
@@ -1830,32 +2052,67 @@ if __name__ == "__main__":
         print("\nProbabilities for each class:")
         for attitude, prob in r['probabilities'].items():
             print(f"  {attitude}: {prob:.2%}")
+        
+     
+        
         # track = AITrackingDataCollector(db_manager)
         # test = track.collect_comprehensive_data("user-student-01","course-html-css")
         # print(test)
         # test = track.collect_comprehensive_data
-        # # cm = ContentRecommender(db_manager)
-        # # cm_def = cm.recommend_lessons()
-        # print("\n📊 KẾT QUẢ PHÂN TÍCH:")
-        # print("Has data:", analysis.get("has_data"))
-        # print("Total questions:", analysis.get("total_questions"))
-        # print("Total time:", analysis.get("total_time"), "s")
-        # print("Correct answers:", analysis.get("correct_answers"))
-        # print("Overall accuracy:", analysis.get("overall_accuracy_percent"), "%")
-        # print("Overall accuracy (decimal):", analysis.get("overall_accuracy"))
-        # print("Reason: ", result[2].get('reason') )
+        # cm = ContentRecommender(db_manager)
+        # cm_def = cm.recommend_lessons()
+        print("\n📊 KẾT QUẢ PHÂN TÍCH:")
+        print("Has data:", analysis.get("has_data"))
+        print("Total questions:", analysis.get("total_questions"))
+        print("Total time:", analysis.get("total_time"), "s")
+        print("Correct answers:", analysis.get("correct_answers"))
+        print("Overall accuracy:", analysis.get("overall_accuracy_percent"), "%")
+        print("Overall accuracy (decimal):", analysis.get("overall_accuracy"))
+        print("Reason: ", result[2].get('reason') )
 
-        # # print("\n📈 Hiệu suất theo danh mục:")
-        # # print(json.dumps(analysis.get("assessment_attempt_performance", {}), indent=2, ensure_ascii=False))
+        print("\n📈 Hiệu suất theo danh mục:")
+        print(json.dumps(analysis.get("assessment_attempt_performance", {}), indent=2, ensure_ascii=False))
 
-        # # print("\n📉 Hiệu suất theo độ khó:")
-        # # print(json.dumps(analysis.get("difficulty_performance", {}), indent=2, ensure_ascii=False))
+        print("\n📉 Hiệu suất theo độ khó:")
+        print(json.dumps(analysis.get("difficulty_performance", {}), indent=2, ensure_ascii=False))
 
-        # # print("\n🚨 Danh mục yếu:")
-        # # print(json.dumps(analysis.get("weak_categories", []), indent=2, ensure_ascii=False))
+        print("\n🚨 Danh mục yếu:")
+        print(json.dumps(analysis.get("weak_categories", []), indent=2, ensure_ascii=False))
 
-        # # print("\n📚 Cơ hội cải thiện:")
-        # # print(json.dumps(analysis.get("avd_categories", []), indent=2, ensure_ascii=False))
+        print("\n📚 Cơ hội cải thiện:")
+        print(json.dumps(analysis.get("avd_categories", []), indent=2, ensure_ascii=False))
+        
+           # ===== MODEL SAVE/LOAD DEMO =====
+        print("\n" + "="*60)
+        print("🔧 DEMO: Model Save/Load Operations")
+        print("="*60)
+        
+        # Save models after training
+        print("\n1. Lưu models sau khi train...")
+        ModelManager.save_all_models(Ai, rd, "./models/")
+        
+        # Show model info  
+        print("\n2. Thông tin models đã lưu:")
+        model_info = ModelManager.create_model_info("./models/")
+        print(json.dumps(model_info, indent=2, ensure_ascii=False, default=str))
+        
+        # Load models from files
+        print("\n3. Load models từ files...")
+        loaded_strategy_ai, loaded_attitude_model = ModelManager.load_all_models("./models/")
+        
+        # Test loaded models
+        print("\n4. Test models đã được load:")
+        
+        # Test LearningStrategyAI
+        loaded_result = loaded_strategy_ai.predict_strategy(test)
+        print(f"   LearningStrategyAI: {loaded_result[0]} (confidence: {loaded_result[1]:.2%})")
+        
+        # Test RandomForestLearninAttube  
+        loaded_attitude_result = loaded_attitude_model.predict(tesst, return_proba=True)
+        print(f"   RandomForestLearninAttube: {loaded_attitude_result['attitude']} (confidence: {loaded_attitude_result['confidence']:.2%})")
+        
+        print("\n✅ Model save/load operations completed successfully!")
+        print("="*60)
         
         # print(f"🔍 strategy after assignment: {strategy}")
         # print(f"🔍 confidence after assignment: {confidence}")
