@@ -1,2 +1,2 @@
- # if not self.models_loaded:
-        #     return {"error": "Models not loaded"}
+   print("\n📊 Model Evaluation:")
+        print(f"   Accuracy: {accuracy_score(y_test_split, y_pred):.2%}")

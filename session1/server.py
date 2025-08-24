@@ -6,7 +6,6 @@ from datetime import datetime
 import os
 import sys
 
-# Import các class từ exampel.py
 from exampel import (
     DatabaseManager, TestAnalyzer, LearningStrategyAI, 
     ContentRecommender, Learning_assessment, RandomForestLearninAttube,
@@ -91,7 +90,7 @@ def analyze_performance():
     try:
         data = request.get_json()
         user_id = data.get('user_id')
-        assessment_id = data.get('assessment_id')
+        assessment_id = data.get('assesment_attemp_id')
         
         if not user_id or not assessment_id:
             return jsonify({'error': 'user_id và assessment_id là required'}), 400
@@ -114,7 +113,6 @@ def analyze_performance():
 
 @app.route('/api/predict-strategy', methods=['POST'])
 def predict_strategy():
-    """Dự đoán learning strategy cho user"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
