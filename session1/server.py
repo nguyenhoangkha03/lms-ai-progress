@@ -89,18 +89,21 @@ def analyze_performance():
     """Phân tích performance của user"""
     try:
         data = request.get_json()
-        user_id = data.get('user_id')
-        assessment_id = data.get('assesment_attemp_id')
+        # user_id = data.get('user_id')
+        # print(user_id)
+        # assessment_id = data.get('assesment_attemp_id')
+        questions = data.get('data')
         
-        if not user_id or not assessment_id:
-            return jsonify({'error': 'user_id và assessment_id là required'}), 400
+        
+        # if not user_id or not assessment_id:
+        #     return jsonify({'error': 'user_id và assessment_id là required'}), 400
             
         # Analyze user performance
-        analysis = test_analyzer.analyze_user_performance(db_manager, user_id, assessment_id)
-        
+        # analysis = test_analyzer.analyze_user_performance(db_manager, user_id, assessment_id)
+        analysis_begin = test_analyzer.analyze_user_begining(db_manager,questions)
         return jsonify({
             'success': True,
-            'data': analysis,
+            'data': analysis_begin,
             'timestamp': datetime.now().isoformat()
         })
         

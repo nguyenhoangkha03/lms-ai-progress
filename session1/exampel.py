@@ -3,11 +3,13 @@ import numpy as np
 import pandas as pd
 import calendar
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import cross_val_score
+from sklearn.metrics import mean_squared_error, r2_score
 import json
 from typing import Dict, List, Tuple
 from datetime import datetime
@@ -66,6 +68,134 @@ class DatabaseManager:
             print("🔐 Đã đóng kết nối database")
 
 class TestAnalyzer:
+    def analyze_user_begining(self, db: DatabaseManager, questions):
+        list_course = []
+        course_stats = {}
+        
+        # Initialize statistics
+        total_questions = len(questions)
+        correct_answers = 0
+        difficulty_stats = {'easy': {'correct': 0, 'total': 0}, 
+                          'medium': {'correct': 0, 'total': 0}, 
+                          'hard': {'correct': 0, 'total': 0}}
+        
+        for q in questions:
+            question_id = q.get('questionId')
+            answer = q.get('answer')
+            
+            where_clause = f""" 
+            JOIN questions qs ON qs.id = '{question_id}'
+            JOIN assessments a ON a.id = qs.assessmentId
+            WHERE cr.id = a.courseId
+            """
+            
+            data = db.select("courses cr", "cr.id, cr.level, cr.title, qs.difficulty", where_clause)
+            
+            for d in data:
+                course_id = d.get('id')
+                course_level = d.get('level')
+                course_title = d.get('title')
+                question_difficulty = d.get('difficulty')
+                
+                # Track difficulty statistics for extract_features
+                if question_difficulty in difficulty_stats:
+                    difficulty_stats[question_difficulty]['total'] += 1
+                    if answer == True:
+                        difficulty_stats[question_difficulty]['correct'] += 1
+                        correct_answers += 1
+                
+                # Initialize course stats if not exists
+                if course_id not in course_stats:
+                    course_stats[course_id] = {
+                        'id': course_id,
+                        'level': course_level,
+                        'title': course_title,
+                        'total_questions': 0,
+                        'wrong_answers': 0,
+                        'wrong_easy': 0,
+                        'wrong_medium': 0,
+                        'wrong_hard': 0
+                    }
+                
+                course_stats[course_id]['total_questions'] += 1
+                
+                # Track wrong answers by difficulty
+                if answer == False:
+                    course_stats[course_id]['wrong_answers'] += 1
+                    
+                    if question_difficulty == 'easy':
+                        course_stats[course_id]['wrong_easy'] += 1
+                    elif question_difficulty == 'medium':
+                        course_stats[course_id]['wrong_medium'] += 1
+                    elif question_difficulty == 'hard':
+                        course_stats[course_id]['wrong_hard'] += 1
+        
+        beginner_courses = []
+        intermediate_courses = []
+        advanced_courses = []
+        
+        for course_id, stats in course_stats.items():
+            if stats['wrong_answers'] > 0:  
+                course_data = {
+                    'course_id': course_id,
+                    'course_title': stats['title'],
+                    'course_level': stats['level'],
+                    'wrong_answers': stats['wrong_answers'],
+                    'wrong_easy_questions': stats['wrong_easy']
+                }
+                
+                if stats['level'] == 'beginner':
+                    beginner_courses.append(course_data)
+                elif stats['level'] == 'intermediate':
+                    intermediate_courses.append(course_data)
+                elif stats['level'] == 'advanced':
+                    advanced_courses.append(course_data)
+        
+    
+        beginner_courses.sort(key=lambda x: x['wrong_easy_questions'], reverse=True)
+        
+      
+        intermediate_courses.sort(key=lambda x: x['wrong_answers'], reverse=True)
+        advanced_courses.sort(key=lambda x: x['wrong_answers'], reverse=True)
+        
+        
+        learning_path = []
+        learning_path.extend(beginner_courses)
+        learning_path.extend(intermediate_courses)
+        learning_path.extend(advanced_courses)
+        
+        # Calculate overall accuracy
+        overall_accuracy = correct_answers / total_questions if total_questions > 0 else 0
+        
+        # Format difficulty performance for extract_features compatibility
+        difficulty_performance = {}
+        for difficulty in ['easy', 'medium', 'hard']:
+            if difficulty_stats[difficulty]['total'] > 0:
+                accuracy = difficulty_stats[difficulty]['correct'] / difficulty_stats[difficulty]['total']
+                difficulty_performance[difficulty] = {
+                    'accuracy': accuracy * 100,  # Convert to percentage
+                    'correct': difficulty_stats[difficulty]['correct'],
+                    'total': difficulty_stats[difficulty]['total']
+                }
+        
+        return {
+            # Original learning path data
+            'learning_path': learning_path,
+            'total_courses_to_study': len(learning_path),
+            'recommended_start': learning_path[0]['course_title'] if learning_path else None,
+            
+            # Data compatible with extract_features function
+            'has_data': total_questions > 0,
+            'overall_accuracy': overall_accuracy,
+            'total_questions': total_questions,
+            'total_time': 0,  # Not available in begining analysis
+            'difficulty_performance': difficulty_performance,
+            'weak_categories': [],  # Could be enhanced based on course analysis
+            'strategy_criteria': {'focus': 'beginner', 'difficulty': 'easy'}
+        }
+            
+    
+  
     def analyze_user_performance(self, db: DatabaseManager, user_id: str, assessment_attempId : str):
         weak_categories = []
         avd_categories = []
@@ -623,7 +753,7 @@ class LearningStrategyAI:
         print(classification_report(
             y_test_split, 
             y_pred, 
-            labels=[0, 1, 2, 3, 4],  # ép đủ 5 class
+            labels=[0, 1, 2, 3, 4],  
             target_names=target_names,
             digits=3,
             zero_division=0
@@ -2000,7 +2130,7 @@ class AITrackingDataCollector:
         hourly_time = duration_df.groupby(duration_df['timestamp'].dt.hour)['duration'].sum()
         # print(hourly_time)
         peak_hours = hourly_time.nlargest(3).index.tolist()
-        # print(peak_hours)
+        
         
         return {
             'total_learning_time': float(total_time),
@@ -2012,6 +2142,7 @@ class AITrackingDataCollector:
     def _analyze_learning_behavior(self, df):
         """Phân tích hành vi học tập"""
         # Phân tích độ tập trung (dựa trên video activities)
+        
         video_activities = df[df['activityType'].str.contains('video', case=False, na=False)]
         # print("Here", video_activities)
         focus_analysis = self._analyze_focus_patterns(video_activities)
@@ -2946,127 +3077,74 @@ class AITRACKING:
         self.data = AITrackingDataCollector(self.db)
     def extract_features_aitrack(self, data):
         """Chuẩn hóa dữ liệu từ AITracking thành feature vector"""
+
+        # print(data)
         features = []
-        
-        # Basic user info
-        # features.append(1 if data.get('user_id') else 0)  # has_user_id
-        # features.append(1 if data.get('course_id') else 0)  # has_course_id
-        
-        # Basic progress features
+        def get_nested(d, keys, default=0):
+            for key in keys:
+                if isinstance(d, dict):
+                    d = d.get(key)
+                else:
+                    return default
+            return d if d is not None else default
+
+
         basic_progress = (data.get('basic_progress') or [{}])[0]
+        level_map = {"beginner": 1, "intermediate": 2, "advanced": 3, "expert": 4}
         features.extend([
-            basic_progress.get('totalLessons', 0),
-            basic_progress.get('totalVideoDuration', 0),
-            1 if basic_progress.get('level') == 'beginner' else 2 if basic_progress.get('level') == 'intermediate' else 3
+            get_nested(basic_progress, ['totalLessons']),
+            get_nested(basic_progress, ['totalVideoDuration']),
+            level_map.get(get_nested(basic_progress, ['level']), 0),
+            get_nested(basic_progress, ['durationHours'])
+            
+            
         ])
-        # print("tttttttttttttttttt",  basic_progress.get('totalLessons', 0))
-        # Learning activities features
-        learning_activities = data.get('learning_activities', {})
-        activities = learning_activities.get('activity_summary', {})
-        
+
+
+        activities = data.get('learning_activities', {})
         features.extend([
-            learning_activities.get('total_activities', 0),
-            # activities.get('note_create', {}).get('count', 0),
-            activities.get('video_pause', {}).get('count', 0),
-            activities.get('video_play', {}).get('count', 0),
-            # activities.get('note_create', {}).get('avg_duration', 0),
-            activities.get('video_pause', {}).get('avg_duration', 0),
-            activities.get('video_play', {}).get('avg_duration', 0)
+            get_nested(activities, ['total_activities']),
+            get_nested(activities, ['activity_summary', 'video_play', 'count']),
+            get_nested(activities, ['engagement_patterns', 'learning_streak', 'current_streak']),
+            get_nested(activities, ['engagement_patterns', 'learning_streak', 'longest_streak']),
+            get_nested(activities, ['time_analysis', 'total_learning_time']),
+            get_nested(activities, ['learning_behavior', 'focus_patterns', 'focus_score'])
         ])
-        
-        # Engagement patterns
-        engagement = learning_activities.get('engagement_patterns', {})
-        streak = engagement.get('learning_streak', {})
-        session = engagement.get('session_analysis', {})
-        
-        features.extend([
-            streak.get('current_streak', 0),
-            streak.get('longest_streak', 0),
-            streak.get('total_learning_days', 0),
-            session.get('total_sessions', 0),
-            session.get('avg_activities_per_session', 0),
-            session.get('avg_session_duration', 0),
-            engagement.get('most_active_hour', 0)
-        ])
-        
-        # Time analysis
-        time_analysis = learning_activities.get('time_analysis', {})
-        features.extend([
-            time_analysis.get('total_learning_time', 0),
-            time_analysis.get('average_session_duration', 0)
-        ])
-        
-        # Learning behavior
-        behavior = learning_activities.get('learning_behavior', {})
-        focus = behavior.get('focus_patterns', {})
-        video_eng = focus.get('video_engagement', {})
-        completion = behavior.get('completion_patterns', {})
-        interaction = behavior.get('content_interaction', {})
-        
-        features.extend([
-            focus.get('focus_score', 0),
-            video_eng.get('play_count', 0),
-            video_eng.get('pause_count', 0),
-            video_eng.get('completion_rate', 0),
-            completion.get('completion_rate', 0),
-            completion.get('total_completions', 0),
-            interaction.get('interaction_count', 0)
-        ])
-        
-        # Assessment performance
+
+
         assessment = data.get('assessment_performance', {})
-        summary = assessment.get('assessment_summary', {})
-        trends = assessment.get('performance_trends', {})
-        difficulty = assessment.get('difficulty_analysis', {}).get('medium', {})
-        time_perf = assessment.get('time_analysis', {})
-        improvement = assessment.get('improvement_analysis', {})
-        
         features.extend([
-            summary.get('total_attempts', 0),
-            round(float(summary.get('average_score', 0)),2),
-            round(float(summary.get('average_percentage', 0)),2),
-            summary.get('passed_attempts', 0),
-            summary.get('failed_attempts', 0),
-            float(summary.get('pass_rate', 0)),
-            difficulty.get('total_questions', 0),
-            difficulty.get('correct_answers', 0),
-            float(difficulty.get('accuracy', 0)),
-            time_perf.get('average_time', 0),
-            float(improvement.get('average_improvement', 0)),
-            float(improvement.get('consistency_score', 0)),
-            float(improvement.get('total_improvement', 0))
+            get_nested(assessment, ['assessment_summary', 'total_attempts']),
+            get_nested(assessment, ['assessment_summary', 'average_percentage']),
+            get_nested(assessment, ['assessment_summary', 'pass_rate']),
+            get_nested(assessment, ['performance_trends', 'slope']),
+            get_nested(assessment, ['difficulty_analysis', 'easy', 'accuracy']),
+            get_nested(assessment, ['difficulty_analysis', 'medium', 'accuracy']),
+            get_nested(assessment, ['difficulty_analysis', 'hard', 'accuracy']),
+            get_nested(assessment, ['time_analysis', 'average_time'])
         ])
-        
-        # Content interaction
-        content = data.get('content_interaction', {})
-        lesson_progress = content.get('lesson_progress_analysis', {})
-        completion_stats = lesson_progress.get('completion_stats', {})
-        time_stats = lesson_progress.get('time_analysis', {})
-        video_interaction = content.get('video_interaction_analysis', {})
-        video_behavior = video_interaction.get('viewing_behavior', {})
-        overall = content.get('overall_engagement_score', {})
-        
+
+
+        interaction = data.get('content_interaction', {})
         features.extend([
-            lesson_progress.get('total_lessons', 0),
-            completion_stats.get('completed', 0),
-            completion_stats.get('in_progress', 0),
-            float(completion_stats.get('completion_rate', 0)),
-            round((time_stats.get('total_time_spent', 0) / 3600), 2),
-            round(time_stats.get('average_time_per_lesson', 0),2),
-            video_interaction.get('total_video_activities', 0),
-            video_behavior.get('play_count', 0),
-            video_behavior.get('pause_count', 0),
-            float(video_behavior.get('pause_rate', 0)),
-            float(video_behavior.get('completion_rate', 0)),
-            float(video_behavior.get('focus_score', 0)),
-            float(overall.get('overall_score', 0))
+            get_nested(interaction, ['lesson_progress_analysis', 'completion_stats', 'completion_rate']),
+            get_nested(interaction, ['video_interaction_analysis', 'viewing_behavior', 'completion_rate']),
+            get_nested(interaction, ['notes_bookmarks_analysis', 'total_notes']),
+            get_nested(interaction, ['overall_engagement_score', 'overall_score'])
         ])
-        # print("Trước np.array", features)
-        # print("Sau np.array", np.array(features))
-        return np.array(features[:51])
+
+
+        final_features = [float(f) if isinstance(f, (int, float)) else 0.0 for f in features]
+        
+        print(final_features)
+        
+       
+        
+       
+        return np.array(final_features)
     
     def train_performance_model(self):
-        """Huấn luyện model dự đoán hiệu suất học tập"""
+        """Huấn luyện model dự đoán xu hướng tăng giảm điểm và điểm cuối kỳ"""
         
         where_clause = f""" 
         JOIN user_roles url ON url.user_id = ur.id
@@ -3074,57 +3152,165 @@ class AITRACKING:
         JOIN enrollments en ON en.studentId = ur.id
         WHERE rl.name = 'student' AND en.courseId IS NOT NULL
         """
+        
         students = self.db.select("users ur", " DISTINCT ur.id, en.courseId", where_clause)
+        
+        training_features = []
+        trend_labels = []
+        score_labels = []
+        
         for student in students:
             studentId = student['id']
             courseId = student['courseId']
-            data = self.data.collect_comprehensive_data(studentId,courseId)
+            data = self.data.collect_comprehensive_data(studentId, courseId)
             features = self.extract_features_aitrack(data)
-            # print("Dữ liệu vào:", data)
-            # print("Dữ liệu ra:", features)
-        # X_train, X_test, y_train, y_test = train_test_split(
-        #     training_data, labels, test_size=0.2, random_state=42, stratify=labels
-        # )
+            
+            if features is not None and len(features) > 0:
+                training_features.append(features)
+                
+                # Dự đoán xu hướng từ engagement patterns
+                engagement_score = data.get('content_interaction', {}).get('overall_engagement_score', {}).get('overall_score', 0)
+                focus_score = data.get('learning_activities', {}).get('learning_behavior', {}).get('focus_patterns', {}).get('focus_score', 50)
+                
+                
+                if engagement_score > 0.7 and focus_score > 70:
+                    trend_labels.append(2)  
+                elif engagement_score > 0.3 and focus_score > 40:
+                    trend_labels.append(1) 
+                else:
+                    trend_labels.append(0) 
+                
+                # Tạo label cho điểm cuối kỳ dự kiến (0-100)
+                predicted_score = min(100, max(0, 
+                    engagement_score * 40 + 
+                    (focus_score / 100) * 35 + 
+                    (data.get('learning_activities', {}).get('total_activities', 0) / 10) * 25
+                ))
+                score_labels.append(predicted_score)
         
+        if len(training_features) == 0:
+            print("❌ Không có dữ liệu training")
+            return None
+            
+        X = np.array(training_features)
+        y_trend = np.array(trend_labels)
+        y_score = np.array(score_labels)
+        
+        # Chia dữ liệu train/test
+        X_train, X_test, y_trend_train, y_trend_test, y_score_train, y_score_test = train_test_split(
+            X, y_trend, y_score, test_size=0.3, random_state=42, stratify=y_trend
+        )
+        
+        # Chuẩn hóa dữ liệu
+        self.performance_scaler = StandardScaler()
+        X_train_scaled = self.performance_scaler.fit_transform(X_train)
+        X_test_scaled = self.performance_scaler.transform(X_test)
+        
+        # Model dự đoán xu hướng
+        self.trend_model = RandomForestClassifier(
+            n_estimators=100,
+            max_depth=10,
+            min_samples_split=5,
+            min_samples_leaf=2,
+            class_weight='balanced',
+            random_state=42,
+            n_jobs=-1
+        )
+        
+        # Model dự đoán điểm số
+        
+        self.score_model = RandomForestRegressor(
+            n_estimators=100,
+            max_depth=10,
+            min_samples_split=5,
+            min_samples_leaf=2,
+            random_state=42,
+            n_jobs=-1
+        )
+        
+        # Huấn luyện models
+        self.trend_model.fit(X_train_scaled, y_trend_train)
+        self.score_model.fit(X_train_scaled, y_score_train)
+        
+        # Đánh giá models
+        trend_pred = self.trend_model.predict(X_test_scaled)
+        score_pred = self.score_model.predict(X_test_scaled)
+        
+        trend_accuracy = accuracy_score(y_trend_test, trend_pred)
     
-        # self.performance_scaler = StandardScaler()
-        # X_train_scaled = self.performance_scaler.fit_transform(X_train)
-        # X_test_scaled = self.performance_scaler.transform(X_test)
+        score_mse = mean_squared_error(y_score_test, score_pred)
+        score_r2 = r2_score(y_score_test, score_pred)
         
+        print(f"✅ Trend Model - Accuracy: {trend_accuracy:.4f}")
+        print(f"✅ Score Model - MSE: {score_mse:.4f}, R²: {score_r2:.4f}")
         
-        # self.performance_model = RandomForestClassifier(
-        #     n_estimators=100,
-        #     max_depth=10,
-        #     min_samples_split=5,
-        #     min_samples_leaf=2,
-        #     class_weight='balanced',
-        #     random_state=42,
-        #     n_jobs=-1
-        # )
+        return {
+            'trend_accuracy': trend_accuracy,
+            'score_mse': score_mse,
+            'score_r2': score_r2,
+            'trend_feature_importance': self.trend_model.feature_importances_,
+            'score_feature_importance': self.score_model.feature_importances_
+        }
+    
+    def predict_performance(self, features):
+        """Dự đoán xu hướng và điểm số từ features"""
+        if not hasattr(self, 'trend_model') or not hasattr(self, 'score_model'):
+            return {
+                'trend_prediction': 'unknown',
+                'trend_confidence': 0.0,
+                'predicted_score': 0.0,
+                'score_confidence': 0.0,
+                'performance_level': 'unknown'
+            }
         
-        # self.performance_model.fit(X_train_scaled, y_train)
+        features_scaled = self.performance_scaler.transform([features])
         
+        # Dự đoán xu hướng
+        trend_pred = self.trend_model.predict(features_scaled)[0]
+        trend_proba = self.trend_model.predict_proba(features_scaled)[0]
+        trend_confidence = max(trend_proba)
         
-        # y_pred = self.performance_model.predict(X_test_scaled)
-        # accuracy = accuracy_score(y_test, y_pred)
-        # report = classification_report(y_test, y_pred)
+        trend_labels = ['giảm', 'ổn định', 'tăng']
+        trend_prediction = trend_labels[trend_pred]
         
-        # print(f"Model Performance - Accuracy: {accuracy:.4f}")
-        # print("Classification Report:")
-        # print(report)
+        # Dự đoán điểm số
+        predicted_score = max(0, min(100, self.score_model.predict(features_scaled)[0]))
         
-        # return {
-        #     'accuracy': accuracy,
-        #     'classification_report': report,
-        #     'feature_importance': self.performance_model.feature_importances_
-        # }
+        # Tính confidence cho điểm số (dựa trên variance của trees)
+        score_predictions = [tree.predict(features_scaled)[0] for tree in self.score_model.estimators_]
+        score_std = np.std(score_predictions)
+        score_confidence = max(0, 1 - (score_std / 50))  # Normalize to 0-1
+        
+        # Xác định performance level
+        if predicted_score >= 85:
+            performance_level = 'excellent'
+        elif predicted_score >= 70:
+            performance_level = 'good'
+        elif predicted_score >= 50:
+            performance_level = 'average'
+        else:
+            performance_level = 'needs_improvement'
+        
+        return {
+            'trend_prediction': trend_prediction,
+            'trend_confidence': trend_confidence,
+            'predicted_score': predicted_score,
+            'score_confidence': score_confidence,
+            'performance_level': performance_level,
+            'trend_probabilities': {
+                'giảm': trend_proba[0],
+                'ổn định': trend_proba[1],
+                'tăng': trend_proba[2]
+            }
+        }
     
     def save_model(self, filename='aitrack_model.pkl'):
         """Lưu model đã huấn luyện"""
         import joblib
         
         model_data = {
-            'performance_model': self.performance_model if hasattr(self, 'performance_model') else None,
+            'trend_model': self.trend_model if hasattr(self, 'trend_model') else None,
+            'score_model': self.score_model if hasattr(self, 'score_model') else None,
             'performance_scaler': self.performance_scaler if hasattr(self, 'performance_scaler') else None
         }
         
@@ -3137,7 +3323,8 @@ class AITRACKING:
         
         try:
             model_data = joblib.load(filename)
-            self.performance_model = model_data.get('performance_model')
+            self.trend_model = model_data.get('trend_model')
+            self.score_model = model_data.get('score_model')
             self.performance_scaler = model_data.get('performance_scaler')
             print(f"✅ Đã tải model từ {filename}")
             return True
@@ -3211,12 +3398,13 @@ if __name__ == "__main__":
         strategy, confidence, sdf = result
         recomment = cm.recommend_lessons(db_manager, strategy, analysis)
         # # Test AITRACKING model
-        # pretrack = AITrackingDataCollector(db_manager) 
-        # student_data = pretrack.collect_comprehensive_data("user-student-01", "course-html-css")
+        pretrack = AITrackingDataCollector(db_manager) 
+        student_data = pretrack.collect_comprehensive_data("user-student-01", "course-html-css")
         
         # # Khởi tạo AITRACKING model
-        # aitrack_model = AITRACKING(db_manager)
-        # t = aitrack_model.train_performance_model()
+        aitrack_model = AITRACKING(db_manager)
+        t = aitrack_model.train_performance_model()
+        p = aitrack_model.predict_performance()
         # # Test extract features
         # features = aitrack_model.extract_features_aitrack(student_data)
         # print(f"✅ Features extracted: {len(features)} features")
@@ -3286,7 +3474,7 @@ if __name__ == "__main__":
         
         # # Save models after training
         # print("\n1. Lưu models sau khi train...")
-        ModelManager.save_all_models(Ai, "./models/")
+        # ModelManager.save_all_models(Ai, "./models/")
         
         # # Show model info  
         # print("\n2. Thông tin models đã lưu:")
