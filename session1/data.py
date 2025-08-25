@@ -913,21 +913,21 @@ class ContentRecommender:
                                            strategy_criteria: Dict, 
                                            user_performance: Dict) -> float:
         """Calculate priority score from performance data"""
-        priority = 0.5  # Base score
-        
-        # Adjust based on error count
+        priority = 0.5  
+        print("Xem" ,strategy_criteria )
+        print(lesson_dict)
+      
         error_count = lesson_dict.get('error_count', 0)
         if error_count > 0:
-            priority += 0.2 * min(error_count / 3, 1.0)  # More errors = higher priority
+            priority += 0.2 * min(error_count / 3, 1.0)
         
-        # Adjust based on priority level
+        
         priority_level = lesson_dict.get('priority', 'MEDIUM')
         if priority_level == 'HIGH':
             priority += 0.3
         elif priority_level == 'MEDIUM':
             priority += 0.1
         
-        # Adjust based on strategy
         if strategy_criteria['focus'] == 'theory' and 'theory' in lesson_dict.get('title', '').lower():
             priority += 0.2
         elif strategy_criteria['focus'] == 'practice' and 'practice' in lesson_dict.get('title', '').lower():

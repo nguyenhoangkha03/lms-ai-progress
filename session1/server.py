@@ -56,7 +56,7 @@ def initialize_models():
                 print("Pre-trained models loaded successfully")
         except Exception as e:
             print(f"Could not load pre-trained models: {e}")
-            # Train models if no pre-trained ones exist
+          
             print("Training models...")
             learning_strategy_ai.train_model()
             random_forest_model.train()
@@ -84,62 +84,37 @@ def health_check():
         ])
     })
 
-@app.route('/api/analyze-performance', methods=['POST'])
-def analyze_performance():
-    """Phân tích performance của user"""
+@app.route('/api/recommend', methods=['POST'])
+def recommend():
+    """Đề xuất lessons cho user"""
     try:
         data = request.get_json()
-        # user_id = data.get('user_id')
-        # print(user_id)
-        # assessment_id = data.get('assesment_attemp_id')
         questions = data.get('data')
         
-        
-        # if not user_id or not assessment_id:
-        #     return jsonify({'error': 'user_id và assessment_id là required'}), 400
-            
-        # Analyze user performance
-        # analysis = test_analyzer.analyze_user_performance(db_manager, user_id, assessment_id)
-        analysis_begin = test_analyzer.analyze_user_begining(db_manager,questions)
-        return jsonify({
-            'success': True,
-            'data': analysis_begin,
-            'timestamp': datetime.now().isoformat()
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e),
-            'traceback': traceback.format_exc()
-        }), 500
-
-@app.route('/api/predict-strategy', methods=['POST'])
-def predict_strategy():
-    try:
-        data = request.get_json()
-        user_id = data.get('user_id')
-        assessment_id = data.get('assessment_id')
-        
-        if not user_id or not assessment_id:
-            return jsonify({'error': 'user_id và assessment_id là required'}), 400
+        if not questions:
+            return jsonify({'error': 'thiếu danh sách câu hỏi'}), 400
             
         # Get performance analysis
-        analysis = test_analyzer.analyze_user_performance(db_manager, user_id, assessment_id)
-        
+        # analysis = test_analyzer.analyze_user_performance(db_manager, user_id, assessment_id)
+        analysis_begin = test_analyzer.analyze_user_begining(db_manager,questions)
         # Extract features for strategy prediction
-        features = learning_strategy_ai.extract_features(analysis)
+        features = learning_strategy_ai.extract_features(analysis_begin)
         
         # Predict strategy
         strategy, confidence, additional_info = learning_strategy_ai.predict_strategy(features)
+        
+        
+        # Get lesson recommendations
+        recommendations = content_recommender.recommend_lessons(db_manager, strategy, analysis_begin)
+        # print("Con cá con:", analysis_begin)
         
         return jsonify({
             'success': True,
             'data': {
                 'strategy': strategy,
-                'confidence': confidence,
-                'additional_info': additional_info,
-                'features_used': features.tolist()
+                'strategy_confidence': confidence,
+                'recommendations': recommendations,
+                'total_recommendations': len(recommendations)
             },
             'timestamp': datetime.now().isoformat()
         })
@@ -157,20 +132,24 @@ def recommend_lessons():
     try:
         data = request.get_json()
         user_id = data.get('user_id')
-        assessment_id = data.get('assessment_id')
+        assessment_attemp_id = data.get('assessment_attemp_id')
         
-        if not user_id or not assessment_id:
+        if not user_id or not assessment_attemp_id:
             return jsonify({'error': 'user_id và assessment_id là required'}), 400
             
         # Get performance analysis
-        analysis = test_analyzer.analyze_user_performance(db_manager, user_id, assessment_id)
-        
-        # Get strategy prediction
+        analysis = test_analyzer.analyze_user_performance(db_manager, user_id, assessment_attemp_id)
+        # analysis_begin = test_analyzer.analyze_user_begining(db_manager,questions)
+        # Extract features for strategy prediction
         features = learning_strategy_ai.extract_features(analysis)
-        strategy, confidence, _ = learning_strategy_ai.predict_strategy(features)
+        
+        # Predict strategy
+        strategy, confidence, additional_info = learning_strategy_ai.predict_strategy(features)
+        
         
         # Get lesson recommendations
         recommendations = content_recommender.recommend_lessons(db_manager, strategy, analysis)
+        # print("Con cá con:", analysis_begin)
         
         return jsonify({
             'success': True,
@@ -405,8 +384,7 @@ if __name__ == '__main__':
         print("Server starting on http://localhost:5000")
         print("\nAvailable endpoints:")
         print("  GET  /health                    - Health check")
-        print("  POST /api/analyze-performance   - Analyze user performance")
-        print("  POST /api/predict-strategy      - Predict learning strategy")
+        print("  POST /api/recommend     - Get lesson recommendations")
         print("  POST /api/recommend-lessons     - Get lesson recommendations")
         print("  POST /api/predict-attitude      - Predict learning attitude")
         print("  POST /api/comprehensive-analysis - Complete analysis")

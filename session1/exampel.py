@@ -104,7 +104,6 @@ class TestAnalyzer:
                         difficulty_stats[question_difficulty]['correct'] += 1
                         correct_answers += 1
                 
-                # Initialize course stats if not exists
                 if course_id not in course_stats:
                     course_stats[course_id] = {
                         'id': course_id,
@@ -119,7 +118,7 @@ class TestAnalyzer:
                 
                 course_stats[course_id]['total_questions'] += 1
                 
-                # Track wrong answers by difficulty
+             
                 if answer == False:
                     course_stats[course_id]['wrong_answers'] += 1
                     
@@ -140,16 +139,17 @@ class TestAnalyzer:
                     'course_id': course_id,
                     'course_title': stats['title'],
                     'course_level': stats['level'],
+                    'course_total_questions': stats['total_questions'],
                     'wrong_answers': stats['wrong_answers'],
                     'wrong_easy_questions': stats['wrong_easy']
                 }
                 
-                if stats['level'] == 'beginner':
-                    beginner_courses.append(course_data)
-                elif stats['level'] == 'intermediate':
-                    intermediate_courses.append(course_data)
-                elif stats['level'] == 'advanced':
-                    advanced_courses.append(course_data)
+            if stats['level'] == 'beginner':
+                beginner_courses.append(course_data)
+            elif stats['level'] == 'intermediate':
+                intermediate_courses.append(course_data)
+            elif stats['level'] == 'advanced':
+                advanced_courses.append(course_data)
         
     
         beginner_courses.sort(key=lambda x: x['wrong_easy_questions'], reverse=True)
@@ -157,7 +157,8 @@ class TestAnalyzer:
       
         intermediate_courses.sort(key=lambda x: x['wrong_answers'], reverse=True)
         advanced_courses.sort(key=lambda x: x['wrong_answers'], reverse=True)
-        
+        # print("here", beginner_courses) 
+   
         
         learning_path = []
         learning_path.extend(beginner_courses)
@@ -167,32 +168,140 @@ class TestAnalyzer:
         # Calculate overall accuracy
         overall_accuracy = correct_answers / total_questions if total_questions > 0 else 0
         
-        # Format difficulty performance for extract_features compatibility
+       
         difficulty_performance = {}
         for difficulty in ['easy', 'medium', 'hard']:
             if difficulty_stats[difficulty]['total'] > 0:
                 accuracy = difficulty_stats[difficulty]['correct'] / difficulty_stats[difficulty]['total']
                 difficulty_performance[difficulty] = {
-                    'accuracy': accuracy * 100,  # Convert to percentage
+                    'accuracy': accuracy * 100,  
                     'correct': difficulty_stats[difficulty]['correct'],
                     'total': difficulty_stats[difficulty]['total']
                 }
+        # Chuẩn bị data tương thích với extract_features để có thể sử dụng với model từ bên ngoài
+        weak_categories = []
+        lesson_recommendations = []
         
+        for course in learning_path:
+            if course.get('wrong_answers', 0) > 0: 
+            
+                accuracy_correct = max(0, (course.get('total_questions', 1) - course.get('wrong_answers', 0))) / course.get('total_questions', 1) * 100
+                weak_categories.append({
+                    'course_name': course.get('course_title'), 
+                    'accuracy_correct': accuracy_correct,
+                    'difficulty_question': 'medium',  # Default
+                    'priority': 'HIGH' if course.get('wrong_easy_questions', 0) > 0 else 'MEDIUM',
+                    'correct_answers': course.get('total_questions', 1) - course.get('wrong_answers', 0)
+                })
+                
+                lesson_recommendations.append({
+                    'lesson_id': f"course_{course.get('course_id')}",
+                    'lesson_title': course.get('course_title'),
+                    'lesson_slug': f"course-{course.get('course_id')}", 
+                    'lesson_accuracy': accuracy_correct,
+                    'error_count': course.get('wrong_answers', 0),
+                    'total_question_lesson': course.get('total_questions', 1),
+                    'difficulties_affected': ['easy'] if course.get('wrong_easy_questions', 0) > 0 else ['medium'],
+                    'questions_wrong': [],  # Không có chi tiết câu sai trong begining analysis
+                    'reason': f"Sai {course.get('wrong_answers', 0)}/{course.get('total_questions', 1)} câu"
+                })
+
         return {
-            # Original learning path data
+        
             'learning_path': learning_path,
             'total_courses_to_study': len(learning_path),
             'recommended_start': learning_path[0]['course_title'] if learning_path else None,
             
-            # Data compatible with extract_features function
+          
             'has_data': total_questions > 0,
             'overall_accuracy': overall_accuracy,
             'total_questions': total_questions,
             'total_time': 0,  # Not available in begining analysis
             'difficulty_performance': difficulty_performance,
-            'weak_categories': [],  # Could be enhanced based on course analysis
-            'strategy_criteria': {'focus': 'beginner', 'difficulty': 'easy'}
+            'weak_categories': weak_categories,
+            # 'lesson_recommendations': lesson_recommendations,
+            'hint_usage_rate': 0.0,  # Default value cho begining analysis
+            'strategy_criteria': self._determine_strategy_criteria(overall_accuracy, difficulty_performance, len(weak_categories))
         }
+    
+    def _determine_strategy_criteria(self, overall_accuracy, difficulty_performance, weak_count):
+        """
+        Xác định strategy criteria dựa trên performance thực tế thay vì hardcode
+        """
+     
+        if overall_accuracy < 0.4:
+            focus = 'foundation'  # Cần học lại nền tảng
+        elif overall_accuracy < 0.65:
+            focus = 'beginner'    # Mức cơ bản
+        elif overall_accuracy < 0.8:
+            focus = 'intermediate'  # Mức trung cấp
+        else:
+            focus = 'advanced'    # Mức nâng cao
+        
+        # Xác định difficulty dựa trên performance theo từng độ khó
+        difficulty_scores = {}
+        if difficulty_performance:
+            for level in ['easy', 'medium', 'hard']:
+                if level in difficulty_performance:
+                    accuracy = difficulty_performance[level].get('accuracy', 0)
+                    difficulty_scores[level] = accuracy
+        
+        # Tìm điểm yếu nhất để focus
+        if difficulty_scores:
+            # Sắp xếp theo accuracy tăng dần (yếu nhất trước)
+            sorted_difficulties = sorted(difficulty_scores.items(), key=lambda x: x[1])
+            weakest_difficulty = sorted_difficulties[0][0]  # Độ khó có accuracy thấp nhất
+            
+            # Nếu accuracy thấp nhất vẫn > 80% thì focus vào hard
+            if sorted_difficulties[0][1] > 80:
+                difficulty = 'hard'  # Đã giỏi cơ bản, focus nâng cao
+            else:
+                difficulty = weakest_difficulty  # Focus vào điểm yếu
+        else:
+            difficulty = 'easy'  # Default nếu không có data
+        
+        # Điều chỉnh dựa trên số lượng weak categories
+        if weak_count > 5:
+            focus = 'foundation'  # Quá nhiều điểm yếu, cần học lại nền tảng
+            difficulty = 'easy'
+        elif weak_count > 3:
+            if focus == 'advanced':
+                focus = 'intermediate'  # Hạ focus level xuống
+        
+        return {
+            'focus': focus,
+            'difficulty': difficulty,
+            'weak_areas_count': weak_count,
+            'overall_level': self._get_overall_level(overall_accuracy),
+            'priority_difficulty': difficulty,  # Độ khó cần ưu tiên
+            'recommended_approach': self._get_approach_by_criteria(focus, difficulty, weak_count)
+        }
+    
+    def _get_overall_level(self, accuracy):
+        """Xác định level tổng quan dựa trên accuracy"""
+        if accuracy < 0.3:
+            return 'very_poor'
+        elif accuracy < 0.5:
+            return 'poor'
+        elif accuracy < 0.65:
+            return 'fair'
+        elif accuracy < 0.8:
+            return 'good'
+        elif accuracy < 0.9:
+            return 'very_good'
+        else:
+            return 'excellent'
+    
+    def _get_approach_by_criteria(self, focus, difficulty, weak_count):
+        """Đề xuất approach dựa trên criteria"""
+        if focus == 'foundation':
+            return 'intensive_review'  # Ôn tập chuyên sâu
+        elif weak_count > 3:
+            return 'guided_practice'   # Luyện tập có hướng dẫn
+        elif focus == 'advanced' and difficulty == 'hard':
+            return 'challenge_mode'    # Thử thách
+        else:
+            return 'adaptive_learning' # Học thích ứng
             
     
   
@@ -689,21 +798,23 @@ class LearningStrategyAI:
                 #     y_train.append(4)
                     
                     
-                if features[0] < 0.4:
-                    X_train.append(features [:16])
-                    y_train.append(0)
-                elif 0.4 <= features[0] < 0.65:
-                    X_train.append(features [:16])
-                    y_train.append(1)
-                elif 0.65 <= features[0] < 0.85:
-                    X_train.append(features [:16])
-                    y_train.append(2)
-                elif features[0] > 0.85:
-                    X_train.append(features [:16])
-                    y_train.append(3)
-                else:
-                    X_train.append(features [:16])
-                    y_train.append(4)
+                # Cải thiện logic phân loại strategy dựa trên nhiều features
+                accuracy = features[0]
+                total_questions = features[1] 
+                hint_usage = features[2]
+                time_spent = features[3]
+                easy_acc = features[4]
+                medium_acc = features[6] 
+                hard_acc = features[8]
+                weak_categories = features[10]
+                
+                strategy_id = self._determine_strategy_id(
+                    accuracy, total_questions, hint_usage, time_spent,
+                    easy_acc, medium_acc, hard_acc, weak_categories
+                )
+                
+                X_train.append(features[:16])
+                y_train.append(strategy_id)
 
 
             # print(assesments)
@@ -728,10 +839,10 @@ class LearningStrategyAI:
         
         # Thử với RandomForest thay vì GradientBoosting để có độ chính xác cao hơn
         self.model = RandomForestClassifier(
-            n_estimators=200,           # Tăng số lượng trees
-            max_depth=15,               # Độ sâu tối đa
-            min_samples_split=5,        # Số mẫu tối thiểu để split
-            min_samples_leaf=2,         # Số mẫu tối thiểu ở leaf
+            n_estimators=200,          
+            max_depth=15,              
+            min_samples_split=5,      
+            min_samples_leaf=2,        
             max_features='sqrt',        # Số features khi split
             random_state=42,
             n_jobs=-1,                  # Sử dụng tất cả CPU cores
@@ -783,6 +894,36 @@ class LearningStrategyAI:
         print(f"\n📈 Cross-validation Accuracy: {cv_scores.mean():.2%} (+/- {cv_scores.std() * 2:.2%})")
         
         return self.model
+    
+    def _determine_strategy_id(self, accuracy, total_questions, hint_usage, time_spent,
+                              easy_acc, medium_acc, hard_acc, weak_categories):
+        """
+        Xác định strategy ID dựa trên logic phức tạp xét nhiều yếu tố
+        """
+        
+        if (accuracy < 0.3 or 
+            (accuracy < 0.5 and easy_acc < 0.6) or
+            (weak_categories > 5 and accuracy < 0.4)):
+            return 0
+            
+
+        elif (accuracy > 0.85 and hard_acc > 0.8 and hint_usage < 0.2 and
+              weak_categories <= 1):
+            return 3
+   
+        elif (accuracy < 0.65 or hint_usage > 0.5 or
+              (easy_acc > 0.7 and medium_acc < 0.5) or
+              weak_categories > 3):
+            return 1
+            
+      
+        elif (0.65 <= accuracy <= 0.85 and 
+              medium_acc > 0.6 and 
+              hint_usage <= 0.4 and
+              weak_categories <= 3):
+            return 2
+        else:
+            return 4
                 
     # def predict_strategy(self, features: np.array) -> Tuple[str, float, Dict]:
     #     """Predict learning strategy with improved rules and model integration"""
@@ -862,42 +1003,188 @@ class LearningStrategyAI:
     
     
     def predict_strategy(self, features: np.array) -> Tuple[str, float, Dict]:
+        """
+        Dự đoán strategy học tập với đánh giá chi tiết kết quả từ model đã train
+        """
         if not self.is_trained:
+            print("⚠️  Model chưa được train, đang thực hiện training...")
             self.train_model()
 
         features = np.array(features, dtype=float).flatten()
-
-        # Safety check cực đoan
+        
+        # Thông tin chi tiết về input features
+        feature_analysis = self._analyze_input_features(features)
+        # print(f"\n🔍 Phân tích input features:")
+        # print(f"   Accuracy: {features[0]:.2%}")
+        # print(f"   Total questions: {features[1]}")
+        # print(f"   Easy accuracy: {features[4]:.2%}")
+        # print(f"   Medium accuracy: {features[6]:.2%}")  
+        # print(f"   Hard accuracy: {features[8]:.2%}")
+        
+        # Safety rule cho accuracy cực thấp
         if features[0] < 0.1:
             return 'INTENSIVE_FOUNDATION', 0.99, {
                 'prediction_method': 'safety_rule',
-                'reason': 'Accuracy cực thấp (<10%)',
-                'confidence_factors': ['accuracy_below_10']
+                'reason': 'Accuracy cực thấp (<10%) - cần học nền tảng',
+                'confidence_factors': ['accuracy_below_10'],
+                'feature_analysis': feature_analysis,
+                'model_performance': None
             }
 
         try:
+           
             features_scaled = self.scaler.transform(features.reshape(1, -1))
+            
+           
             strategy_id = self.model.predict(features_scaled)[0]
             probabilities = self.model.predict_proba(features_scaled)[0]
-
+            
+           
+            model_evaluation = self._evaluate_prediction_quality(features, strategy_id, probabilities)
+            
             strategy = self.STRATEGIES[strategy_id]
             confidence = float(probabilities[strategy_id])
-            # print(f"🔮 Dự đoán: {strategy} (Độ tin cậy: {confidence:.2%})")
+            
+           
+            # print(f"\n🤖 Kết quả dự đoán từ model:")
+            # print(f"   Strategy: {strategy}")
+            # print(f"   Confidence: {confidence:.2%}")
+            # print(f"   Model evaluation: {model_evaluation['quality_score']:.2f}/5.0")
+            # print(f"   Prediction certainty: {model_evaluation['certainty_level']}")
+            
+            # In ra top 3 strategies với xác suất cao nhất
+            sorted_probs = sorted(enumerate(probabilities), key=lambda x: x[1], reverse=True)
+            # print(f"   Top 3 strategies:")
+            # for i, (idx, prob) in enumerate(sorted_probs[:3]):
+            #     print(f"     {i+1}. {self.STRATEGIES[idx]}: {prob:.2%}")
+            
             return strategy, confidence, {
                 'prediction_method': 'ml_model',
-                'reason': strategy,
                 'confidence_factors': ['ml_prediction'],
+                'feature_analysis': feature_analysis,
+                'model_evaluation': model_evaluation,
                 'all_probabilities': {
                     self.STRATEGIES[i]: float(prob) for i, prob in enumerate(probabilities)
-                }
+                },
+                'top_alternatives': [
+                    {'strategy': self.STRATEGIES[idx], 'probability': float(prob)} 
+                    for idx, prob in sorted_probs[:3]
+                ]
             }
 
         except Exception as e:
-            return 'ADAPTIVE_LEARNING', 0.5, {
+            print(f"❌ Lỗi khi sử dụng model: {e}")
+            print("🔄 Sử dụng fallback strategy...")
+            
+            # Fallback dựa trên rules đơn giản
+            fallback_strategy = self._get_fallback_strategy(features)
+            
+            return fallback_strategy, 0.5, {
                 'prediction_method': 'fallback',
-                'reason': f'Lỗi khi predict: {e}',
-                'confidence_factors': ['fallback_default']
+                'reason': f'Lỗi model: {e}. Sử dụng rule-based fallback.',
+                'confidence_factors': ['fallback_default'],
+                'feature_analysis': feature_analysis,
+                'model_evaluation': None
             }
+    
+    def _analyze_input_features(self, features: np.array) -> Dict:
+        """Phân tích chi tiết input features"""
+        return {
+            'accuracy': float(features[0]),
+            'total_questions': int(features[1]),
+            'difficulty_distribution': {
+                'easy_accuracy': float(features[4]),
+                'medium_accuracy': float(features[6]), 
+                'hard_accuracy': float(features[8])
+            },
+            'performance_level': self._get_performance_level(features[0]),
+            'difficulty_strength': self._analyze_difficulty_strength(features)
+        }
+    
+    def _evaluate_prediction_quality(self, features: np.array, predicted_strategy_id: int, probabilities: np.array) -> Dict:
+        """Đánh giá chất lượng dự đoán của model"""
+        print("Kết quả dự đoán:", probabilities )
+        print(predicted_strategy_id)
+        max_prob = np.max(probabilities)
+        prob_std = np.std(probabilities)
+        
+        # Tính certainty level
+        if max_prob > 0.8:
+            certainty = "Very High"
+            certainty_score = 5.0
+        elif max_prob > 0.6:
+            certainty = "High" 
+            certainty_score = 4.0
+        elif max_prob > 0.4:
+            certainty = "Medium"
+            certainty_score = 3.0
+        elif max_prob > 0.25:
+            certainty = "Low"
+            certainty_score = 2.0
+        else:
+            certainty = "Very Low"
+            certainty_score = 1.0
+            
+
+        rule_based_strategy = self._get_rule_based_strategy(features)
+        consistency_score = 1.0 if rule_based_strategy == self.STRATEGIES[predicted_strategy_id] else 0.5
+        
+        # Tính tổng quality score
+        quality_score = (certainty_score * 0.6 + consistency_score * 2.0 * 0.4)
+        
+        return {
+            'quality_score': quality_score,
+            'certainty_level': certainty,
+            'max_probability': float(max_prob),
+            'probability_spread': float(prob_std),
+            'rule_consistency': consistency_score,
+            'rule_based_strategy': rule_based_strategy
+        }
+    
+    def _get_performance_level(self, accuracy: float) -> str:
+        """Xác định mức độ performance"""
+        if accuracy >= 0.9:
+            return "Excellent"
+        elif accuracy >= 0.75:
+            return "Good"  
+        elif accuracy >= 0.6:
+            return "Fair"
+        elif accuracy >= 0.4:
+            return "Poor"
+        else:
+            return "Very Poor"
+    
+    def _analyze_difficulty_strength(self, features: np.array) -> str:
+        """Phân tích điểm mạnh theo độ khó"""
+        easy_acc = features[4]
+        medium_acc = features[6] 
+        hard_acc = features[8]
+        
+        if hard_acc > 0.8:
+            return "Advanced"
+        elif medium_acc > 0.7:
+            return "Intermediate"
+        elif easy_acc > 0.6:
+            return "Beginner"
+        else:
+            return "Foundation_needed"
+    
+    def _get_rule_based_strategy(self, features: np.array) -> str:
+        """Lấy strategy dựa trên rules để so sánh với model"""
+        accuracy = features[0]
+        
+        if accuracy < 0.4:
+            return "INTENSIVE_FOUNDATION"
+        elif accuracy < 0.65:
+            return "GUIDED_PRACTICE" 
+        elif accuracy < 0.85:
+            return "ADAPTIVE_LEARNING"
+        else:
+            return "CHALLENGE_MODE"
+    
+    def _get_fallback_strategy(self, features: np.array) -> str:
+        """Fallback strategy khi model gặp lỗi"""
+        return self._get_rule_based_strategy(features)
     
     def save_model(self, filepath: str):
         """
@@ -950,9 +1237,46 @@ class LearningStrategyAI:
     
 class ContentRecommender:
     def recommend_lessons(self, db_manager: DatabaseManager, strategy: str, user_performance: Dict) -> List[Dict]:
+     
+        
+        # Kiểm tra loại data input
+        # print("O", user_performance)
+        data_source = self._detect_data_source(user_performance)
+        # print(f"🔍 Detected data source: {data_source}")
+        
         recommendations = []
         
-        # Strategy configuration    
+        # Xử lý dựa trên data source  
+        if data_source == 'analyze_user_begining':
+            recommendations = self._process_begining_analysis(user_performance, strategy)
+        elif data_source == 'analyze_user_performance':
+            recommendations = self._process_performance_analysis(user_performance, strategy)
+        elif data_source == 'ai_prediction_result':
+            recommendations = self._process_ai_prediction(user_performance, strategy)
+        else:
+          
+            recommendations = self._process_fallback_logic(db_manager, strategy, user_performance)
+        
+        # Sắp xếp theo độ ưu tiên từ cao đến thấp
+        sorted_recommendations = sorted(recommendations, key=lambda x: x.get('priority_score', 0), reverse=True)
+        
+        
+        for i, rec in enumerate(sorted_recommendations):
+            rec['order_index'] = i + 1
+            rec['priority_rank'] = self._get_priority_rank(rec.get('priority_score', 0))
+        
+        # print(f"📋 Generated {len(sorted_recommendations)} recommendations")
+        # if sorted_recommendations:
+        #     print(f"🏆 Top 3 priorities:")
+        #     for i, rec in enumerate(sorted_recommendations[:3]):
+        #         print(f"   {i+1}. {rec.get('course_title', 'Unknown')} (Priority: {rec.get('priority_score', 0):.2f})")
+        
+        return sorted_recommendations
+    
+    def _process_fallback_logic(self, db_manager, strategy, user_performance):
+        """Fallback logic sử dụng code cũ"""
+        recommendations = []
+ 
         criteria = {
             'INTENSIVE_FOUNDATION': {'levels': ['beginner'], 'focus': 'theory', 'order': 'easiest_first'},
             'GUIDED_PRACTICE': {'levels': ['beginner', 'intermediate'], 'focus': 'balanced', 'order': 'progressive'},
@@ -967,10 +1291,11 @@ class ContentRecommender:
         }
         
         strategy_criteria = criteria.get(strategy, criteria['MIXED_APPROACH'])
-        # print(user_performance)
+        # print("Im here", strategy_criteria)
         
         # # Get available levels from database
                 # Fix actual_levels -> danh sách (không phải tuple)
+     
         available_courses = db_manager.select("courses", "DISTINCT level")
         available_levels = [course['level'] for course in available_courses]
         actual_levels = [level for level in strategy_criteria['levels'] if level in available_levels]
@@ -1067,12 +1392,12 @@ class ContentRecommender:
                                            strategy_criteria: Dict, 
                                            user_performance: Dict) -> float:
         """Calculate priority score from performance data"""
-        priority = 0.5  # Base score
-        
-        # Adjust based on error count
+        priority = 0.5 
+ 
+     
         error_count = lesson_dict.get('error_count', 0)
         if error_count > 0:
-            priority += 0.2 * min(error_count / 3, 1.0)  # More errors = higher priority
+            priority += 0.2 * min(error_count / 3, 1.0) \
         
         # Adjust based on priority level
         priority_level = lesson_dict.get('priority', 'MEDIUM')
@@ -1088,6 +1413,251 @@ class ContentRecommender:
             priority += 0.2
         
         return min(priority, 1.0)
+    
+    def _detect_data_source(self, user_performance):
+        """Phát hiện nguồn data"""
+        if 'prediction_method' in user_performance and 'feature_analysis' in user_performance:
+            return 'ai_prediction_result'
+        elif 'learning_path' in user_performance:
+            return 'analyze_user_begining'
+        elif 'lesson_id' in user_performance:
+            return 'analyze_user_performance'
+        else:
+            return 'unknown'
+    
+    def _get_priority_rank(self, priority_score):
+        """Chuyển priority score thành rank description"""
+        if priority_score >= 8.0:
+            return "CRITICAL"
+        elif priority_score >= 6.0:
+            return "HIGH"
+        elif priority_score >= 4.0:
+            return "MEDIUM" 
+        elif priority_score >= 2.0:
+            return "LOW"
+        else:
+            return "MINIMAL"
+    
+    def _process_begining_analysis(self, user_performance, strategy):
+        """
+        Xử lý data từ analyze_user_begining
+        Format: Không có lesson - chỉ có course data
+        """
+        # print(user_performance)
+        recommendations = []
+        learning_path = user_performance.get('learning_path', [])
+        # print("check", learning_path)
+        for i, course_data in enumerate(learning_path):
+            # Tính toán các thông số
+            course_id = course_data.get('course_id')
+            course_title = course_data.get('course_title', 'Unknown Course')
+            total_questions = course_data.get('course_total_questions', 0) 
+            wrong_answers = course_data.get('wrong_answers', 0)
+            correct_answers = total_questions - wrong_answers
+            level = course_data.get('course_level', 'beginner')
+         
+            accuracy_percentage = (correct_answers / total_questions) * 100
+            
+            x = self._calculate_the_coefficient(level, accuracy_percentage)
+         
+            base_priority = 5.0 - (x * 0.5) 
+            wrong_penalty = wrong_answers * 0.3
+            priority_score = max(0.5, base_priority + wrong_penalty)
+            
+            # Strategy adjustment
+            strategy_multiplier = {
+                'INTENSIVE_FOUNDATION': 1.5,
+                'GUIDED_PRACTICE': 1.2,
+                'ADAPTIVE_LEARNING': 1.0,
+                'CHALLENGE_MODE': 0.8,
+                'MIXED_APPROACH': 1.1
+            }.get(strategy, 1.0)
+            
+            priority_score *= strategy_multiplier
+            
+            recommendation = {
+                
+                'priority_score': priority_score,
+                'course_title': course_title,
+                'accuracy_percentage': f"{accuracy_percentage:.1f}%",
+                'correct_total_ratio': f"{correct_answers}/{total_questions}",
+                'wrong_total_ratio': f"{wrong_answers}/{total_questions}",
+                'prediction_result': f"{strategy}",
+                
+                # Additional fields
+                'course_id': course_id,
+                'course_level': course_data.get('course_level', 'beginner'),
+                'wrong_easy_questions': course_data.get('wrong_easy_questions', 0),
+                'data_source': 'analyze_user_begining'
+            }
+            
+            recommendations.append(recommendation)
+        
+        return recommendations
+    
+    def _calculate_the_coefficient(self, level, accuracy_percentages):
+        if level == 'beginner':
+            x = 1
+        elif level == 'intermediate':
+            x = 2
+        elif level == 'advanced':
+            x = 3
+        elif level == 'expert':
+            x = 4
+        else:
+            x = 5
+            
+        accuracy_percentage = accuracy_percentages / 100
+        if  0.4 > accuracy_percentage >= 0:
+            x += 0.5
+        elif 0.6 > accuracy_percentage >= 0.4:
+            x += 1
+        elif 0.8 > accuracy_percentage >= 0.6:    
+            x+= 1.5
+        elif 1.0 > accuracy_percentage >= 0.8:
+            x+= 2
+            
+
+        return x
+    
+    def _process_performance_analysis(self, user_performance, strategy):
+        """
+        Xử lý data từ analyze_user_performance  
+        Format: Có lesson - course + lesson details
+        """
+        recommendations = []
+        weak_categories = user_performance.get('weak_categories', [])
+        lesson_recommendations = user_performance.get('lesson_recommendations', [])
+        
+        # Kết hợp weak_categories với lesson_recommendations
+        for weak_cat in weak_categories[:10]:
+            for lesson in lesson_recommendations:
+                # Match category với lesson (có thể dựa trên tên hoặc ID)
+                lesson_title = lesson.get('lesson_title', 'Unknown Lesson')
+                course_title = weak_cat.get('category', 'Unknown Course')
+                
+                # Lesson statistics
+                total_lesson_questions = lesson.get('total_question_lesson', 0) or 1
+                error_count = lesson.get('error_count', 0)
+                correct_answers = total_lesson_questions - error_count
+                lesson_accuracy = (correct_answers / total_lesson_questions) * 100
+                
+                # Priority calculation
+                priority_score = 5.0
+                
+                # Priority từ category
+                if weak_cat.get('priority') == 'HIGH':
+                    priority_score += 2.0
+                elif weak_cat.get('priority') == 'MEDIUM':
+                    priority_score += 1.0
+                
+                # Error penalty
+                priority_score += error_count * 0.4
+                
+                # Strategy adjustment
+                strategy_multiplier = {
+                    'INTENSIVE_FOUNDATION': 1.4,
+                    'GUIDED_PRACTICE': 1.3,
+                    'ADAPTIVE_LEARNING': 1.1,
+                    'CHALLENGE_MODE': 0.9,
+                    'MIXED_APPROACH': 1.2
+                }.get(strategy, 1.0)
+                
+                priority_score *= strategy_multiplier
+                
+                recommendation = {
+                    # Required fields theo format yêu cầu (có lesson)
+                    'priority_score': priority_score,
+                    'course_title': course_title,
+                    'lesson_title': lesson_title,
+                    'lesson_accuracy_percentage': f"{lesson_accuracy:.1f}%",
+                    'lesson_correct_total_ratio': f"{correct_answers}/{total_lesson_questions}",
+                    'lesson_wrong_total_ratio': f"{error_count}/{total_lesson_questions}",
+                    
+                    # Additional fields
+                    'lesson_id': lesson.get('lesson_id'),
+                    'lesson_slug': lesson.get('lesson_slug'),
+                    'category_accuracy': weak_cat.get('accuracy_correct', 0),
+                    'difficulty_affected': lesson.get('difficulties_affected', []),
+                    'data_source': 'analyze_user_performance'
+                }
+                
+                recommendations.append(recommendation)
+                
+                # Chỉ lấy 1 lesson per category để tránh duplicate
+                break
+        
+        return recommendations
+    
+    def _process_ai_prediction(self, user_performance, strategy):
+        """
+        Xử lý data từ AI prediction result
+        Format: Không có lesson - dựa trên feature_analysis
+        """
+        recommendations = []
+        feature_analysis = user_performance.get('feature_analysis', {})
+        
+        # Extract thông tin từ feature_analysis
+        total_questions = feature_analysis.get('total_questions', 0) or 1
+        overall_accuracy = feature_analysis.get('accuracy', 0)
+        correct_answers = int(overall_accuracy * total_questions)
+        wrong_answers = total_questions - correct_answers
+        
+        # Difficulty distribution
+        difficulty_dist = feature_analysis.get('difficulty_distribution', {})
+        
+        # Tạo recommendations cho từng difficulty level
+        for difficulty, accuracy in difficulty_dist.items():
+            if accuracy < 0.6:  # Chỉ recommend những área yếu
+                clean_difficulty = difficulty.replace('_accuracy', '')
+                course_title = f"{clean_difficulty.capitalize()} Level Questions"
+                
+                # Estimate questions cho difficulty này
+                difficulty_questions = max(1, total_questions // 3)  # Giả định chia đều
+                difficulty_correct = int(accuracy * difficulty_questions) 
+                difficulty_wrong = difficulty_questions - difficulty_correct
+                
+                # Priority calculation
+                priority_score = 6.0
+                
+                # Accuracy penalty
+                if accuracy < 0.3:
+                    priority_score += 3.0
+                elif accuracy < 0.5:
+                    priority_score += 2.0
+                else:
+                    priority_score += 1.0
+                
+                # Strategy adjustment
+                strategy_multiplier = {
+                    'INTENSIVE_FOUNDATION': 1.6,
+                    'GUIDED_PRACTICE': 1.3,
+                    'ADAPTIVE_LEARNING': 1.0,
+                    'CHALLENGE_MODE': 0.7,
+                    'MIXED_APPROACH': 1.2
+                }.get(strategy, 1.0)
+                
+                priority_score *= strategy_multiplier
+                
+                recommendation = {
+                    # Required fields theo format yêu cầu
+                    'priority_score': priority_score,
+                    'course_title': course_title,
+                    'accuracy_percentage': f"{accuracy * 100:.1f}%",
+                    'correct_total_ratio': f"{difficulty_correct}/{difficulty_questions}",
+                    'wrong_total_ratio': f"{difficulty_wrong}/{difficulty_questions}",
+                    'prediction_result': f"AI Prediction: {strategy} (Confidence: {user_performance.get('model_evaluation', {}).get('certainty_level', 'Unknown')})",
+                    
+                    # Additional fields
+                    'difficulty_level': clean_difficulty,
+                    'performance_level': feature_analysis.get('performance_level', 'Unknown'),
+                    'data_source': 'ai_prediction_result'
+                }
+                
+                recommendations.append(recommendation)
+        
+        return recommendations
+    
     
     
     
@@ -3386,6 +3956,7 @@ if __name__ == "__main__":
       
         analyzer = TestAnalyzer()
         analysis = analyzer.analyze_user_performance(db_manager, "user-student-12", "att-gu-12")
+        # analysis_begining = analyzer.analyze_user_begining(db_manager)
         Ai = LearningStrategyAI()
         cm = ContentRecommender()
         test = Ai.extract_features(analysis)
@@ -3402,9 +3973,9 @@ if __name__ == "__main__":
         student_data = pretrack.collect_comprehensive_data("user-student-01", "course-html-css")
         
         # # Khởi tạo AITRACKING model
-        aitrack_model = AITRACKING(db_manager)
-        t = aitrack_model.train_performance_model()
-        p = aitrack_model.predict_performance()
+        # aitrack_model = AITRACKING(db_manager)
+        # t = aitrack_model.train_performance_model()
+        # p = aitrack_model.predict_performance()
         # # Test extract features
         # features = aitrack_model.extract_features_aitrack(student_data)
         # print(f"✅ Features extracted: {len(features)} features")
