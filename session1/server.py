@@ -45,7 +45,7 @@ def initialize_models():
         random_forest_model = RandomForestLearninAttube()
         ai_tracking_collector = AITrackingDataCollector(db_manager)
         
-        # Try to load pre-trained models
+        
         try:
             if os.path.exists("./models/"):
                 loaded_strategy, loaded_attitude = ModelManager.load_all_models("./models/")

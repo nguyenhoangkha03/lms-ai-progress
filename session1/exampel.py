@@ -1118,7 +1118,7 @@ class LearningStrategyAI:
         """Fallback strategy khi model gặp lỗi"""
         return self._get_rule_based_strategy(features)
     
-    def save_model(self, pathsave = './model/' ,filename = 'learningstrategyai_model.joblib' ):
+    def save_model(self, pathsave = './models/' ,filename = 'learningstrategyai_model.joblib' ):
         """
         Lưu model vào file
         """
@@ -2238,7 +2238,7 @@ class RandomForestLearninAttube:
         
         return result
     
-    def save_model(self,pathsave = './model/', filename = 'attitude_model.joblib'):
+    def save_model(self,pathsave = './models/', filename = 'attitude_model.joblib'):
       
         if not self.is_trained:
             raise ValueError("Model chưa được train. Hãy gọi train() trước!")
@@ -3717,7 +3717,7 @@ class AITRACKING:
             }
         }
     
-    def save_model(self,pathsave = './model/' ,filename='aitrack_model.joblib'):
+    def save_model(self,pathsave = './models/' ,filename='aitrack_model.joblib'):
         """Lưu model đã huấn luyện"""
         
         model_data = {
@@ -3883,9 +3883,11 @@ class ModelManager:
         Load tất cả models từ thư mục
         """
         loaded_models = []
-        
+        # print(__name__)
         for model_class in model_classes:
+            print("Checkkk", model_class)
             model_name = model_class.__name__.lower()
+          
             file_path = os.path.join(base_path, f"{model_name}.joblib")
             
             if os.path.exists(file_path):
@@ -3979,7 +3981,7 @@ if __name__ == "__main__":
         # aitrack_model.save_model('demo_aitrack_model.pkl')
         # print("I'm Here ", testo)
         learning = Learning_assessment(db_manager)
-        tesst = learning.learning_analytics_data("user-student-14", "lesson-html-tags")
+        tesst = learning.learning_analytics_data("user-student-14")
         rd = RandomForestLearninAttube()
         t = rd.extract_features_lesson(tesst)
         tr = rd.train()
