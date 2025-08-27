@@ -9,7 +9,7 @@ import sys
 from exampel import (
     DatabaseManager, TestAnalyzer, LearningStrategyAI, 
     ContentRecommender, Learning_assessment, RandomForestLearninAttube,
-    AITrackingDataCollector, ModelManager
+    AITrackingDataCollector, AITRACKING
 )
 
 app = Flask(__name__)
@@ -44,25 +44,36 @@ def initialize_models():
         learning_assessment = Learning_assessment(db_manager)
         random_forest_model = RandomForestLearninAttube()
         ai_tracking_collector = AITrackingDataCollector(db_manager)
-        
+        ai_tracking = AITRACKING(db_manager)
+        model_list = [ai_tracking, random_forest_model, learning_strategy_ai]
         
         try:
             if os.path.exists("./models/"):
-                loaded_strategy, loaded_attitude = ModelManager.load_all_models("./models/")
+                loaded_strategy = learning_strategy_ai.load_model("./models/learningstrategyai_model.joblib")
+                loaded_attitude = random_forest_model.load_model("./models/attitude_model.joblib")       
+                load_ai_track = ai_tracking.load_model("./models/aitrack_model.joblib")
+               
+             
                 if loaded_strategy.is_trained:
                     learning_strategy_ai = loaded_strategy
                 if loaded_attitude.is_trained:
                     random_forest_model = loaded_attitude
+                if load_ai_track.is_trained:
+                    ai_tracking = load_ai_track
                 print("Pre-trained models loaded successfully")
         except Exception as e:
             print(f"Could not load pre-trained models: {e}")
           
             print("Training models...")
             learning_strategy_ai.train_model()
+            learning_strategy_ai.save_model()
             random_forest_model.train()
+            random_forest_model.save_model()
+            ai_tracking.train_performance_model()
+            ai_tracking.save_model()
             
             # Save trained models
-            ModelManager.save_all_models(learning_strategy_ai, random_forest_model, "./models/")
+            # ModelManager.save_all_models([learning_strategy_ai, random_forest_model, ai_tracking], "./models/")
             print("Models trained and saved")
             
         return True

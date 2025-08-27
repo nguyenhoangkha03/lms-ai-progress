@@ -1,1 +1,1 @@
-s
+   self.is_trained = model_data.get('is_trained')

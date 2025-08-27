@@ -1126,6 +1126,7 @@ class LearningStrategyAI:
             raise ValueError("Model chưa được train. Hãy gọi train_model() trước!")
         
         model_data = {
+            'model': self.model,
             'scaler': self.scaler,
             'is_trained': self.is_trained,
             'strategies': self.STRATEGIES,
@@ -1156,6 +1157,7 @@ class LearningStrategyAI:
         self.is_trained = model_data['is_trained']
         
         print(f"✅ Model đã được load từ: {filepath}")
+        return self
         
     @classmethod
     def load_pretrained(cls, filepath: str):
@@ -2238,36 +2240,102 @@ class RandomForestLearninAttube:
         
         return result
     
-    def save_model(self,pathsave = './models/', filename = 'attitude_model.joblib'):
-      
-        if not self.is_trained:
+
+    def save_model(self, pathsave: str = "./models", filename: str = "attitude_model.joblib") -> str:
+        """
+        Lưu trạng thái model (chỉ lưu phần serializable).
+        Trả về đường dẫn file đã lưu.
+        """
+        # Nếu caller truyền full path hoặc filename có thư mục, tôn trọng luôn
+        if os.path.isabs(filename) or os.path.dirname(filename):
+            filepath = filename if os.path.isabs(filename) else os.path.join(pathsave, filename)
+        else:
+            filepath = os.path.join(pathsave, filename)
+
+        # tạo thư mục chứa file nếu chưa tồn tại
+        dirpath = os.path.dirname(filepath) or "."
+        os.makedirs(dirpath, exist_ok=True)
+
+        # kiểm tra model đã train chưa
+        if not getattr(self, "is_trained", False):
             raise ValueError("Model chưa được train. Hãy gọi train() trước!")
-        
+
         model_data = {
-            'model': self.model,
-            'scaler': self.scaler,
-            'is_trained': self.is_trained,
-            'learning_attitude': self.Learning_attitude,
-            'model_type': 'RandomForestLearninAttube'
+            "model": getattr(self, "model", None),
+            "scaler": getattr(self, "scaler", None),
+            "is_trained": bool(getattr(self, "is_trained", False)),
+            "learning_attitude": getattr(self, "Learning_attitude", getattr(self, "learning_attitude", None)),
+            "model_type": "RandomForestLearninAttube"
         }
-        
-        filepath = os.path.join(pathsave, f"{filename}")
-        os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else './model/', exist_ok=True)
-        
-        joblib.dump(model_data, filepath)
-        print(f"✅ {self.model} model đã được lưu tại: {filepath}")
-    
-    def load_model(self, filepath: str):
-   
-        if not os.path.exists(filepath):
-            raise FileNotFoundError(f"File không tồn tại: {filepath}")
-        
-        model_data = joblib.load(filepath)
-        
-        
-        self.model = model_data['model']
-        self.scaler = model_data['scaler']
-        self.is_trained = model_data['is_trained']
+
+        try:
+            joblib.dump(model_data, filepath)
+            print(f"✅ Model đã được lưu tại: {filepath}")
+            return filepath
+        except Exception as e:
+            print(f"❌ Lỗi khi lưu model vào {filepath}: {e}")
+            raise
+
+    def load_model(self, filepath_or_name: str, models_dir: str = "./models"):
+        """
+        Tải model. Tham số đầu có thể là:
+         - full path tới file joblib,
+         - hoặc tên file như 'attitude_model.joblib',
+         - hoặc tên base như 'attitude' (hàm sẽ thử nhiều biến thể trong models_dir).
+        """
+        # resolve đường dẫn
+        if os.path.isabs(filepath_or_name) or os.path.dirname(filepath_or_name):
+            candidate = filepath_or_name
+        else:
+            candidate = os.path.join(models_dir, filepath_or_name)
+
+        # thử các biến thể nếu candidate không phải file
+        if not os.path.isfile(candidate):
+            candidates = [
+                candidate,
+                os.path.join(models_dir, f"{filepath_or_name}"),
+                os.path.join(models_dir, f"{filepath_or_name}.joblib"),
+                os.path.join(models_dir, f"{filepath_or_name}_model.joblib"),
+                os.path.join(models_dir, f"{filepath_or_name.lower()}_model.joblib"),
+            ]
+            # fallback: tìm file chứa base name
+            if os.path.isdir(models_dir):
+                for fname in os.listdir(models_dir):
+                    if filepath_or_name.lower() in fname.lower() and fname.lower().endswith(".joblib"):
+                        candidates.append(os.path.join(models_dir, fname))
+
+            found = None
+            for p in candidates:
+                if os.path.isfile(p):
+                    found = p
+                    break
+            if not found:
+                raise FileNotFoundError(f"File không tồn tại: {candidate} (đã thử các biến thể). Kiểm tra tên file trong {models_dir}")
+            candidate = found
+
+        # load bằng joblib
+        try:
+            model_data = joblib.load(candidate)
+        except Exception as e:
+            raise IOError(f"Lỗi khi joblib.load('{candidate}'): {e}")
+
+        # kiểm tra định dạng
+        if not isinstance(model_data, dict):
+            raise TypeError(f"Dữ liệu trong {candidate} không phải dict. Loại: {type(model_data)}")
+
+        # gán an toàn
+        self.model = model_data.get("model", getattr(self, "model", None))
+        self.scaler = model_data.get("scaler", getattr(self, "scaler", None))
+        self.is_trained = bool(model_data.get("is_trained", getattr(self, "is_trained", False)))
+        self.Learning_attitude = model_data.get("learning_attitude", getattr(self, "Learning_attitude", getattr(self, "learning_attitude", None)))
+
+        # optional: kiểm tra model_type
+        model_type = model_data.get("model_type")
+        if model_type and model_type != "RandomForestLearninAttube":
+            print(f"⚠️ Cảnh báo: file {candidate} có model_type={model_type}, không phải 'RandomForestLearninAttube'")
+
+        print(f"✅ Đã tải model từ: {candidate}")
+        return self
         
         
     @classmethod
@@ -3451,7 +3519,7 @@ class AITrackingDataCollector:
         }
         
 class AITRACKING:
-    def __init__(self, db):
+    def __init__(self, db = None):
         self.db = db
         self.data = AITrackingDataCollector(self.db)
         self.feature_names = [
@@ -3717,34 +3785,129 @@ class AITRACKING:
             }
         }
     
-    def save_model(self,pathsave = './models/' ,filename='aitrack_model.joblib'):
-        """Lưu model đã huấn luyện"""
+    # def save_model(self,pathsave = './models/' ,filename='aitrack_model.joblib'):
+    #     """Lưu model đã huấn luyện"""
         
+    #     model_data = {
+    #         'trend_model': self.trend_model if hasattr(self, 'trend_model') else None,
+    #         'score_model': self.score_model if hasattr(self, 'score_model') else None,
+    #         'performance_scaler': self.performance_scaler if hasattr(self, 'performance_scaler') else None,
+    #         'model_type': 'AITracking'
+    #     }
+    #     filepath = os.path.join(pathsave, f"{filename}")
+    #     os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
+    #     joblib.dump(model_data, filepath)
+    #     print(f"✅ Đã lưu model vào {filepath}")
+    
+    # def load_model(self, filename='aitrack_model.joblib'):
+    #     """Tải model đã huấn luyện"""
+    #     import joblib
+        
+    #     try:
+    #         model_data = joblib.load(filename)
+    #         self.trend_model = model_data.get('trend_model')
+    #         self.score_model = model_data.get('score_model')
+    #         self.performance_scaler = model_data.get('performance_scaler')
+    #         print(f"✅ Đã tải model từ {filename}")
+    #         return True
+    #     except Exception as e:
+    #         print(f"❌ Lỗi khi tải model: {e}")
+    #         return False
+    
+    
+    def save_model(self, pathsave: str = "./models", filename: str = "aitrack_model.joblib") -> str:
+        """
+        Lưu trạng thái model (chỉ lưu phần cần thiết) vào <pathsave>/<filename>.
+        Trả về đường dẫn file đã lưu.
+        """
+        # đảm bảo pathsave là thư mục
+        os.makedirs(pathsave, exist_ok=True)
+
+        # nếu caller truyền full path trong filename, tôn trọng luôn
+        if os.path.isabs(filename) or os.path.dirname(filename):
+            filepath = filename if os.path.isabs(filename) else os.path.join(pathsave, filename)
+        else:
+            filepath = os.path.join(pathsave, filename)
+
         model_data = {
-            'trend_model': self.trend_model if hasattr(self, 'trend_model') else None,
-            'score_model': self.score_model if hasattr(self, 'score_model') else None,
-            'performance_scaler': self.performance_scaler if hasattr(self, 'performance_scaler') else None,
+            'is_trained' : getattr(self, 'is_trained', None),
+            'trend_model': getattr(self, 'trend_model', None),
+            'score_model': getattr(self, 'score_model', None),
+            'performance_scaler': getattr(self, 'performance_scaler', None),
             'model_type': 'AITracking'
         }
-        filepath = os.path.join(pathsave, f"{filename}")
-        os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
-        joblib.dump(model_data, filepath)
-        print(f"✅ Đã lưu model vào {filepath}")
-    
-    def load_model(self, filename='aitrack_model.joblib'):
-        """Tải model đã huấn luyện"""
-        import joblib
-        
+
         try:
-            model_data = joblib.load(filename)
-            self.trend_model = model_data.get('trend_model')
-            self.score_model = model_data.get('score_model')
-            self.performance_scaler = model_data.get('performance_scaler')
-            print(f"✅ Đã tải model từ {filename}")
-            return True
+            joblib.dump(model_data, filepath)
+            print(f"✅ Đã lưu model vào {filepath}")
+            return filepath
         except Exception as e:
-            print(f"❌ Lỗi khi tải model: {e}")
-            return False
+            print(f"❌ Lỗi khi lưu model vào {filepath}: {e}")
+            raise
+
+    def load_model(self, filename_or_path: str = "aitrack_model.joblib", models_dir: str = "./models"):
+        """
+        Tải model. Tham số đầu có thể là:
+         - full path tới file joblib,
+         - hoặc tên file như 'aitrack_model.joblib',
+         - hoặc tên base như 'aitrack' (hàm sẽ thử nhiều biến thể trong models_dir).
+        """
+  
+        if os.path.isabs(filename_or_path) or os.path.dirname(filename_or_path):
+            candidate = filename_or_path
+        else:
+            candidate = os.path.join(models_dir, filename_or_path)
+
+
+        if not os.path.isfile(candidate):
+     
+            candidates = [
+                candidate,
+                os.path.join(models_dir, f"{filename_or_path}"),
+                os.path.join(models_dir, f"{filename_or_path}.joblib"),
+                os.path.join(models_dir, f"{filename_or_path}_model.joblib"),
+                os.path.join(models_dir, f"{filename_or_path.lower()}_model.joblib"),
+            ]
+            # thêm fallback: tìm file chứa base name trong models_dir
+            if os.path.isdir(models_dir):
+                for fname in os.listdir(models_dir):
+                    if filename_or_path.lower() in fname.lower() and fname.lower().endswith(".joblib"):
+                        candidates.append(os.path.join(models_dir, fname))
+
+            # chọn cái tồn tại đầu tiên
+            found = None
+            for p in candidates:
+                if os.path.isfile(p):
+                    found = p
+                    break
+            if found is None:
+                raise FileNotFoundError(f"File không tồn tại: {candidate} . Kiểm tra tên file trong {models_dir}")
+            candidate = found
+
+        # bây giờ candidate là file hiện hữu
+        try:
+            model_data = joblib.load(candidate)
+        except Exception as e:
+            raise IOError(f"Lỗi khi joblib.load('{candidate}'): {e}")
+
+        # kiểm tra kiểu dữ liệu
+        if not isinstance(model_data, dict):
+            raise TypeError(f"Dữ liệu trong {candidate} không phải dict. Loại: {type(model_data)}")
+
+        # optional: kiểm tra model_type để tránh load nhầm file
+        model_type = model_data.get('model_type')
+        if model_type and model_type != 'AITracking':
+            print(f"⚠️ Cảnh báo: file {candidate} có model_type={model_type}, không phải 'AITracking'")
+
+        # gán state vào instance (chỉ gán những phần cần thiết)
+        self.is_trained = model_data.get('is_trained')
+        self.trend_model = model_data.get('trend_model')
+        self.score_model = model_data.get('score_model')
+        self.performance_scaler = model_data.get('performance_scaler')
+        # không gán db/connection ở đây (inject db sau khi load nếu cần)
+
+        print(f"✅ Đã tải model từ {candidate}")
+        return self
     
     def _predict_completion_date(self, student_data):
         from datetime import datetime, timedelta
@@ -3854,52 +4017,8 @@ class AITRACKING:
             'performance_prediction': performance_result,
             'analysis_timestamp': student_data.get('collected_at')
         }
-        
-class ModelManager:
-    
-    @staticmethod
-    def save_all_models(models: list, base_path: str = "./models/"):
-        """
-        Lưu tất cả models vào thư mục, tự động đặt tên file theo class
-        """
-        if not os.path.exists(base_path):
-            os.makedirs(base_path, exist_ok=True)
-        
-        for model in models:
-            if hasattr(model, "is_trained") and model.is_trained:
-                model_name = model.__class__.__name__.lower()
-                file_path = os.path.join(base_path, f"{model_name}.joblib")
-                model.save_model(file_path)
-                print(f"✅ Saved {model.__class__.__name__} -> {file_path}")
-            else:
-                print(f"⚠️ {model.__class__.__name__} chưa được train, skip save")
-        
-        print(f"\n🎯 Tất cả models đã được lưu trong: {base_path}")
-    
 
-    @staticmethod
-    def load_all_models(model_classes: list, base_path: str = "./models/") -> list:
-        """
-        Load tất cả models từ thư mục
-        """
-        loaded_models = []
-        # print(__name__)
-        for model_class in model_classes:
-            print("Checkkk", model_class)
-            model_name = model_class.__name__.lower()
-          
-            file_path = os.path.join(base_path, f"{model_name}.joblib")
-            
-            if os.path.exists(file_path):
-                model = model_class.load_pretrained(file_path)
-                print(f"🔄 Loaded {model_name} từ {file_path}")
-            else:
-                print(f"⚠️ Không tìm thấy file: {file_path}, khởi tạo model mới")
-                model = model_class()
-            
-            loaded_models.append(model)
         
-        return loaded_models
 
         
         
