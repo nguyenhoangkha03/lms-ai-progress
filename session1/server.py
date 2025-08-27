@@ -399,7 +399,7 @@ if __name__ == '__main__':
         print("  POST /api/models/retrain        - Retrain all models")
         print("  POST /api/tracking/collect      - Collect tracking data")
         
-        app.run(debug=True, host='0.0.0.0', port=5000)
+        app.run(debug=False, host='0.0.0.0', port=5000)
     else:
         print("Failed to initialize models. Server not started.")
         sys.exit(1)
