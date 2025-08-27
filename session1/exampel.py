@@ -2,6 +2,10 @@ import pymysql
 import numpy as np
 import pandas as pd
 import calendar
+import warnings
+import joblib
+import os
+import json
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
@@ -10,14 +14,14 @@ from sklearn.metrics import classification_report
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import mean_squared_error, r2_score
-import json
+from tqdm import tqdm
+from tqdm_joblib import tqdm_joblib
+from sklearn.model_selection import ParameterGrid
 from typing import Dict, List, Tuple
 from datetime import datetime
 from collections import defaultdict
 from sklearn.model_selection import GridSearchCV
-import warnings
-import joblib
-import os
+
 warnings.filterwarnings('ignore')
 
 class DatabaseManager:
@@ -36,7 +40,6 @@ class DatabaseManager:
                 database='lms_ai_database',
                 cursorclass=pymysql.cursors.DictCursor
             )
-            print("✅ Kết nối thành công đến cơ sở dữ liệu!")
             return self.connection
         except pymysql.MySQLError as e:
             print(f"❌ Lỗi kết nối cơ sở dữ liệu: {e}")
@@ -815,83 +818,89 @@ class LearningStrategyAI:
                 
                 X_train.append(features[:16])
                 y_train.append(strategy_id)
-
-
-            # print(assesments)
-            
-            
-                # X_train.append(features[:16])
-                # y_train.append(4)
         
-        # Convert to numpy arrays
         X_train = np.array(X_train)
         y_train = np.array(y_train)
         
-        # Split data for evaluation
         X_train_split, X_test_split, y_train_split, y_test_split = train_test_split(
             X_train, y_train, test_size=0.2, random_state=42, stratify=y_train
         )
         
-        # Scale features
+      
         X_train_scaled = self.scaler.fit_transform(X_train_split)
         X_test_scaled = self.scaler.transform(X_test_split)
         
         
-        # Thử với RandomForest thay vì GradientBoosting để có độ chính xác cao hơn
-        self.model = RandomForestClassifier(
-            n_estimators=200,          
-            max_depth=15,              
-            min_samples_split=5,      
-            min_samples_leaf=2,        
-            max_features='sqrt',        # Số features khi split
-            random_state=42,
-            n_jobs=-1,                  # Sử dụng tất cả CPU cores
-            class_weight='balanced'     # Cân bằng các class
+      
+        param_grid = {
+            'n_estimators': [100, 200, 300],
+            'max_depth': [10, 15, 20, None],
+            'min_samples_split': [2, 5, 10],
+            'min_samples_leaf': [1, 2, 4],
+            'max_features': ['sqrt', 'log2']
+        }
+
+        grid_search = GridSearchCV(
+            RandomForestClassifier(
+                random_state=42,
+                n_jobs=-1,
+                class_weight='balanced'
+            ),
+            param_grid,
+            cv=5,               
+            scoring='accuracy',
+            n_jobs=-1
         )
-        
-        # Train model
+        n_jobs = len(ParameterGrid(param_grid)) * 5
+        print("🔍 Training LearningStrategyAI ...")
+        with tqdm_joblib(tqdm(total=n_jobs, disable=True)):
+            grid_search.fit(X_train_scaled, y_train_split)
+            
+        self.model = grid_search.best_estimator_
         self.model.fit(X_train_scaled, y_train_split)
+        
+        
         self.is_trained = True
         
         # Đánh giá
-        y_pred = self.model.predict(X_test_scaled)
+        # y_pred = self.model.predict(X_test_scaled)
         
-        print("\n📊 Model Evaluation:")
-        print(f"   Accuracy: {accuracy_score(y_test_split, y_pred):.2%}")
+        # print("\n📊 Model Evaluation:")
+        # print(f"   Accuracy: {accuracy_score(y_test_split, y_pred):.2%}")
         # # # print("\n   Classification Report:")
-        target_names = [self.STRATEGIES[i] for i in sorted(self.STRATEGIES.keys())]
+        # target_names = [self.STRATEGIES[i] for i in sorted(self.STRATEGIES.keys())]
 
-        print(classification_report(
-            y_test_split, 
-            y_pred, 
-            labels=[0, 1, 2, 3, 4],  
-            target_names=target_names,
-            digits=3,
-            zero_division=0
-        ))
+        # print(classification_report(
+        #     y_test_split, 
+        #     y_pred, 
+        #     labels=[0, 1, 2, 3, 4],  
+        #     target_names=target_names,
+        #     digits=3,
+        #     zero_division=0
+        # ))
         # print("\n   Confusion Matrix:")
-        print(confusion_matrix(y_test_split, y_pred))
+        # print(confusion_matrix(y_test_split, y_pred))
         
-        # # Feature importance analysis
-        feature_names = [
-            'accuracy', 'questions', 'hints', 'time',
-            'easy_acc', 'easy_flag', 'medium_acc', 'medium_flag',
-            'hard_acc', 'hard_flag', 'weak_count', 'min_weak',
-            'avg_weak', 'easy_time', 'medium_time', 'hard_time'
-        ]
+        # # # Feature importance analysis
+        # feature_names = [
+        #     'accuracy', 'questions', 'hints', 'time',
+        #     'easy_acc', 'easy_flag', 'medium_acc', 'medium_flag',
+        #     'hard_acc', 'hard_flag', 'weak_count', 'min_weak',
+        #     'avg_weak', 'easy_time', 'medium_time', 'hard_time'
+        # ]
         
-        feature_importance = pd.DataFrame({
-            'feature': feature_names,
-            'importance': self.model.feature_importances_
-        }).sort_values('importance', ascending=False)
+        # feature_importance = pd.DataFrame({
+        #     'feature': feature_names,
+        #     'importance': self.model.feature_importances_
+        # }).sort_values('importance', ascending=False)
         
-        print("\n🔍 Top 5 Most Important Features:")
-        for idx, row in feature_importance.head(5).iterrows():
-            print(f"   {row['feature']}: {row['importance']:.3f}")
+        # print("\n🔍 Top 5 Most Important Features:")
+        # for idx, row in feature_importance.head(5).iterrows():
+        #     print(f"   {row['feature']}: {row['importance']:.3f}")
         
-        cv_scores = cross_val_score(self.model, X_train_scaled, y_train_split, 
-                                    cv=5, scoring='accuracy')
-        print(f"\n📈 Cross-validation Accuracy: {cv_scores.mean():.2%} (+/- {cv_scores.std() * 2:.2%})")
+        # cv_scores = cross_val_score(self.model, X_train_scaled, y_train_split, 
+        #                             cv=5, scoring='accuracy')
+        # print(f"\n📈 Cross-validation Accuracy: {cv_scores.mean():.2%} (+/- {cv_scores.std() * 2:.2%})")
         
         return self.model
     
@@ -924,83 +933,6 @@ class LearningStrategyAI:
             return 2
         else:
             return 4
-                
-    # def predict_strategy(self, features: np.array) -> Tuple[str, float, Dict]:
-    #     """Predict learning strategy with improved rules and model integration"""
-    #     if not self.is_trained:
-    #         self.train_model()
-        
-    #     features = np.array(features, dtype=float).flatten()
-    #     accuracy = features[0]
-        
-    #     # Enhanced rules-based system with more conditions
-    #     additional_info = {
-    #         'prediction_method': 'rules_based',
-    #         'reason': '',
-    #         'confidence_factors': []
-    #     }
-        
-
-    #     if accuracy < 0.3:
-    #         additional_info['reason'] = 'Very low accuracy - requires intensive foundation building'
-    #         additional_info['confidence_factors'] = ['accuracy_below_30_percent']
-    #         return 'INTENSIVE_FOUNDATION', 0.95, additional_info
-        
- 
-    #     elif accuracy >= 0.3 and accuracy < 0.5:
-    #         additional_info['reason'] = 'Low-medium accuracy - guided practice recommended'
-    #         additional_info['confidence_factors'] = ['accuracy_30_to_50_percent']
-    #         return 'GUIDED_PRACTICE', 0.90, additional_info
-        
-      
-    #     elif accuracy >= 0.5 and accuracy < 0.7:
-    #         additional_info['reason'] = 'Medium accuracy - adaptive learning approach'
-    #         additional_info['confidence_factors'] = ['accuracy_50_to_70_percent']
-    #         return 'ADAPTIVE_LEARNING', 0.85, additional_info
-        
-        
-    #     elif accuracy >= 0.7 and accuracy < 0.9:
-    #         additional_info['reason'] = 'High accuracy - challenge mode appropriate'
-    #         additional_info['confidence_factors'] = ['accuracy_70_to_90_percent']
-    #         return 'CHALLENGE_MODE', 0.90, additional_info
-        
-
-    #     elif accuracy >= 0.9:
-    #         additional_info['reason'] = 'Very high accuracy - mixed approach for continued growth'
-    #         additional_info['confidence_factors'] = ['accuracy_above_90_percent']
-    #         return 'MIXED_APPROACH', 0.88, additional_info
-        
-
-    #     try:
-    #         features_scaled = self.scaler.transform(features.reshape(1, -1))
-    #         strategy_id = self.model.predict(features_scaled)[0]
-    #         probabilities = self.model.predict_proba(features_scaled)[0]
-            
-    #         strategy = self.STRATEGIES[strategy_id]
-    #         confidence = float(probabilities[strategy_id])
-            
-    #         additional_info.update({
-    #             'prediction_method': 'ml_model',
-    #             'reason': f'ML model prediction based on feature analysis',
-    #             'confidence_factors': ['ml_model_prediction'],
-    #             'all_probabilities': {
-    #                 self.STRATEGIES[i]: float(prob) 
-    #                 for i, prob in enumerate(probabilities)
-    #             }
-    #         })
-            
-    #         return strategy, confidence, additional_info
-            
-    #     except Exception as e:
-    #         # Final fallback
-    #         additional_info.update({
-    #             'prediction_method': 'fallback',
-    #             'reason': f'Fallback prediction due to error: {str(e)}',
-    #             'confidence_factors': ['fallback_default'],
-    #             'error': str(e)
-    #         })
-    #         return 'ADAPTIVE_LEARNING', 0.5, additional_info
-    
     
     def predict_strategy(self, features: np.array) -> Tuple[str, float, Dict]:
         """
@@ -1104,7 +1036,7 @@ class LearningStrategyAI:
     def _evaluate_prediction_quality(self, features: np.array, predicted_strategy_id: int, probabilities: np.array) -> Dict:
         """Đánh giá chất lượng dự đoán của model"""
         print("Kết quả dự đoán:", probabilities )
-        print(predicted_strategy_id)
+        # print(predicted_strategy_id)
         max_prob = np.max(probabilities)
         prob_std = np.std(probabilities)
         
@@ -1186,7 +1118,7 @@ class LearningStrategyAI:
         """Fallback strategy khi model gặp lỗi"""
         return self._get_rule_based_strategy(features)
     
-    def save_model(self, filepath: str):
+    def save_model(self, pathsave = './model/' ,filename = 'learningstrategyai_model.joblib' ):
         """
         Lưu model vào file
         """
@@ -1194,13 +1126,12 @@ class LearningStrategyAI:
             raise ValueError("Model chưa được train. Hãy gọi train_model() trước!")
         
         model_data = {
-            'model': self.model,
             'scaler': self.scaler,
             'is_trained': self.is_trained,
             'strategies': self.STRATEGIES,
             'model_type': 'LearningStrategyAI'
         }
-        
+        filepath = os.path.join(pathsave, f"{filename}")
         
         os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
         
@@ -1299,16 +1230,16 @@ class ContentRecommender:
         available_courses = db_manager.select("courses", "DISTINCT level")
         available_levels = [course['level'] for course in available_courses]
         actual_levels = [level for level in strategy_criteria['levels'] if level in available_levels]
-        # nếu không có level phù hợp, fallback toàn bộ available_levels (hoặc giữ strategy default)
+        
         if not actual_levels:
             actual_levels = strategy_criteria.get('fallback_levels', strategy_criteria['levels'])
 
-        # Normalize recomment (loại trùng theo lesson_id, giữ thứ tự lần đầu xuất hiện)
+       
         recomment_raw = user_performance.get('lesson_recommendations', []) or []
         unique_recomment = []
         seen_lessons = set()
         for ld in recomment_raw:
-            lid = ld.get('lesson_id') or ld.get('lesson_slug')  # fallback if id missing
+            lid = ld.get('lesson_id') or ld.get('lesson_slug')  
             if not lid:
                 continue
             if lid in seen_lessons:
@@ -1327,9 +1258,9 @@ class ContentRecommender:
                 return default
 
         recommendations = []
-        added_keys = set()  # dedupe final recommendations by (lesson_id, category)
+        added_keys = set()  
 
-        # build function to append safely
+        
         def try_append_recomment(lesson_data, data):
             lid = lesson_data.get('lesson_id') or lesson_data.get('lesson_slug')
             if not lid:
@@ -1337,7 +1268,7 @@ class ContentRecommender:
             key = (lid, data.get('category'))
             if key in added_keys:
                 return
-            # optional: skip very high accuracy lessons
+            
             if as_number(lesson_data.get('lesson_accuracy', 0)) >= 90:
                 return
             recomment_dict = {
@@ -1368,19 +1299,18 @@ class ContentRecommender:
             recommendations.append(recomment_dict)
             added_keys.add(key)
 
-        # 1) ưu tiên weak_categories nếu có
+        
         if weak_categories:
             for data in weak_categories[:5]:
                 for lesson_data in unique_recomment:
                     try_append_recomment(lesson_data, data)
 
-        # 2) nếu không có weak_categories thì dùng avd_categories
+        
         elif avd_categories:
             for data in avd_categories[:5]:
                 for lesson_data in unique_recomment:
                     try_append_recomment(lesson_data, data)
 
-        # sort & limit
         recommendations.sort(key=lambda x: x['priority_score'], reverse=True)
         return recommendations[:5]
 
@@ -1399,14 +1329,14 @@ class ContentRecommender:
         if error_count > 0:
             priority += 0.2 * min(error_count / 3, 1.0) \
         
-        # Adjust based on priority level
+        
         priority_level = lesson_dict.get('priority', 'MEDIUM')
         if priority_level == 'HIGH':
             priority += 0.3
         elif priority_level == 'MEDIUM':
             priority += 0.1
         
-        # Adjust based on strategy
+        
         if strategy_criteria['focus'] == 'theory' and 'theory' in lesson_dict.get('title', '').lower():
             priority += 0.2
         elif strategy_criteria['focus'] == 'practice' and 'practice' in lesson_dict.get('title', '').lower():
@@ -1448,7 +1378,7 @@ class ContentRecommender:
         learning_path = user_performance.get('learning_path', [])
         # print("check", learning_path)
         for i, course_data in enumerate(learning_path):
-            # Tính toán các thông số
+            
             course_id = course_data.get('course_id')
             course_title = course_data.get('course_title', 'Unknown Course')
             total_questions = course_data.get('course_total_questions', 0) 
@@ -1464,7 +1394,7 @@ class ContentRecommender:
             wrong_penalty = wrong_answers * 0.3
             priority_score = max(0.5, base_priority + wrong_penalty)
             
-            # Strategy adjustment
+           
             strategy_multiplier = {
                 'INTENSIVE_FOUNDATION': 1.5,
                 'GUIDED_PRACTICE': 1.2,
@@ -1480,13 +1410,12 @@ class ContentRecommender:
                 'priority_score': priority_score,
                 'course_title': course_title,
                 'accuracy_percentage': f"{accuracy_percentage:.1f}%",
-                'correct_total_ratio': f"{correct_answers}/{total_questions}",
-                'wrong_total_ratio': f"{wrong_answers}/{total_questions}",
-                'prediction_result': f"{strategy}",
+                'correct_total_ratio': round(correct_answers/total_questions,2),
+                'wrong_total_ratio': round(wrong_answers/total_questions,2),
+                # 'prediction_result': f"{strategy}",
                 
-                # Additional fields
                 'course_id': course_id,
-                'course_level': course_data.get('course_level', 'beginner'),
+                'course_level': level,
                 'wrong_easy_questions': course_data.get('wrong_easy_questions', 0),
                 'data_source': 'analyze_user_begining'
             }
@@ -1529,32 +1458,32 @@ class ContentRecommender:
         weak_categories = user_performance.get('weak_categories', [])
         lesson_recommendations = user_performance.get('lesson_recommendations', [])
         
-        # Kết hợp weak_categories với lesson_recommendations
+        
         for weak_cat in weak_categories[:10]:
             for lesson in lesson_recommendations:
-                # Match category với lesson (có thể dựa trên tên hoặc ID)
+                
                 lesson_title = lesson.get('lesson_title', 'Unknown Lesson')
                 course_title = weak_cat.get('category', 'Unknown Course')
                 
-                # Lesson statistics
+                
                 total_lesson_questions = lesson.get('total_question_lesson', 0) or 1
                 error_count = lesson.get('error_count', 0)
                 correct_answers = total_lesson_questions - error_count
                 lesson_accuracy = (correct_answers / total_lesson_questions) * 100
                 
-                # Priority calculation
+              
                 priority_score = 5.0
                 
-                # Priority từ category
+               
                 if weak_cat.get('priority') == 'HIGH':
                     priority_score += 2.0
                 elif weak_cat.get('priority') == 'MEDIUM':
                     priority_score += 1.0
                 
-                # Error penalty
+                
                 priority_score += error_count * 0.4
                 
-                # Strategy adjustment
+                
                 strategy_multiplier = {
                     'INTENSIVE_FOUNDATION': 1.4,
                     'GUIDED_PRACTICE': 1.3,
@@ -1566,7 +1495,7 @@ class ContentRecommender:
                 priority_score *= strategy_multiplier
                 
                 recommendation = {
-                    # Required fields theo format yêu cầu (có lesson)
+                   
                     'priority_score': priority_score,
                     'course_title': course_title,
                     'lesson_title': lesson_title,
@@ -1574,7 +1503,7 @@ class ContentRecommender:
                     'lesson_correct_total_ratio': f"{correct_answers}/{total_lesson_questions}",
                     'lesson_wrong_total_ratio': f"{error_count}/{total_lesson_questions}",
                     
-                    # Additional fields
+                    
                     'lesson_id': lesson.get('lesson_id'),
                     'lesson_slug': lesson.get('lesson_slug'),
                     'category_accuracy': weak_cat.get('accuracy_correct', 0),
@@ -1583,8 +1512,6 @@ class ContentRecommender:
                 }
                 
                 recommendations.append(recommendation)
-                
-                # Chỉ lấy 1 lesson per category để tránh duplicate
                 break
         
         return recommendations
@@ -1597,38 +1524,35 @@ class ContentRecommender:
         recommendations = []
         feature_analysis = user_performance.get('feature_analysis', {})
         
-        # Extract thông tin từ feature_analysis
+        
         total_questions = feature_analysis.get('total_questions', 0) or 1
         overall_accuracy = feature_analysis.get('accuracy', 0)
         correct_answers = int(overall_accuracy * total_questions)
         wrong_answers = total_questions - correct_answers
         
-        # Difficulty distribution
         difficulty_dist = feature_analysis.get('difficulty_distribution', {})
-        
-        # Tạo recommendations cho từng difficulty level
+
         for difficulty, accuracy in difficulty_dist.items():
-            if accuracy < 0.6:  # Chỉ recommend những área yếu
+            if accuracy < 0.6:  
                 clean_difficulty = difficulty.replace('_accuracy', '')
                 course_title = f"{clean_difficulty.capitalize()} Level Questions"
                 
-                # Estimate questions cho difficulty này
-                difficulty_questions = max(1, total_questions // 3)  # Giả định chia đều
+              
+                difficulty_questions = max(1, total_questions // 3) 
                 difficulty_correct = int(accuracy * difficulty_questions) 
                 difficulty_wrong = difficulty_questions - difficulty_correct
                 
-                # Priority calculation
+             
                 priority_score = 6.0
                 
-                # Accuracy penalty
+               
                 if accuracy < 0.3:
                     priority_score += 3.0
                 elif accuracy < 0.5:
                     priority_score += 2.0
                 else:
                     priority_score += 1.0
-                
-                # Strategy adjustment
+             
                 strategy_multiplier = {
                     'INTENSIVE_FOUNDATION': 1.6,
                     'GUIDED_PRACTICE': 1.3,
@@ -1640,7 +1564,7 @@ class ContentRecommender:
                 priority_score *= strategy_multiplier
                 
                 recommendation = {
-                    # Required fields theo format yêu cầu
+                  
                     'priority_score': priority_score,
                     'course_title': course_title,
                     'accuracy_percentage': f"{accuracy * 100:.1f}%",
@@ -1648,7 +1572,7 @@ class ContentRecommender:
                     'wrong_total_ratio': f"{difficulty_wrong}/{difficulty_questions}",
                     'prediction_result': f"AI Prediction: {strategy} (Confidence: {user_performance.get('model_evaluation', {}).get('certainty_level', 'Unknown')})",
                     
-                    # Additional fields
+                
                     'difficulty_level': clean_difficulty,
                     'performance_level': feature_analysis.get('performance_level', 'Unknown'),
                     'data_source': 'ai_prediction_result'
@@ -1665,11 +1589,10 @@ class Learning_assessment:
     def __init__(self, db):
         self.db = db
         
-    def learning_analytics_data(self, user_id: str, lesson_id: str):
+    def learning_analytics_data(self, user_id: str):
         now = datetime.now()
         data = {
             'user_id': user_id,
-            'lesson_id': lesson_id,
             'collected_at': datetime.now().isoformat(),
             
             'session' : self._get_session(user_id, now),
@@ -1782,7 +1705,7 @@ class Learning_assessment:
             videoDuration.append(vid_sec)
             time_study.append(time_for_ls)
 
-        timmeDuration = sum(estimatedDuration) + sum(videoDuration)  # tổng giây
+        timmeDuration = sum(estimatedDuration) + sum(videoDuration) or 1
         totalTimeStudy = sum(time_study)
         avg_sec_per_day = round((totalTimeStudy/timmeDuration) * 100, 2)
         
@@ -1830,7 +1753,7 @@ class RandomForestLearninAttube:
         
     def extract_features_lesson(self, data):
         
-        #Tính tổng, độ lệch chuẩn, tính trung bình cho day_off, day_study và isSkipped
+      
         duration_list = []
         activities_list = []
         timeSpentInMonth_list = []
@@ -2155,24 +2078,23 @@ class RandomForestLearninAttube:
                 
                 
                 features = [
-                    sum_days_study,           # 1. Tổng số ngày học
-                    mean_days_study,          # 2. Trung bình ngày học
-                    std_days_study,           # 3. Std của gaps ( khoảng cách ngày học)
-                    mean_gap_session,         # 4. Mean của gaps_sessions (khoảng cách ngày đăng nhập)
-                    std_days_gap_off,         # 5. Std của gaps_sessions
-                    total_timespent,          # 6. Tổng thời gian học
-                    mean_timespent,           # 7. Thời gian học trung bình
-                    std_timespent,            # 8. Std thời gian học
-                    mean_duration,            # 9. Duration trung bình
-                    std_duration,             # 10. Std duration
-                    men_activities,           # 11. Activities trung bình
-                    std_activities,           # 12. Std activities
-                    percent_time_study        # 13. Phần trăm thời gian học
+                    sum_days_study,           
+                    mean_days_study,         
+                    std_days_study,          
+                    mean_gap_session,        
+                    std_days_gap_off,        
+                    total_timespent,         
+                    mean_timespent,          
+                    std_timespent,           
+                    mean_duration,           
+                    std_duration,            
+                    men_activities,          
+                    std_activities,          
+                    percent_time_study       
                 ]
-                
-                # Add small noise
-                features[5] *= np.random.uniform(0.95, 1.05)
-                features[10] *= np.random.uniform(0.9, 1.1)
+
+                # features[5] *= np.random.uniform(0.95, 1.05)
+                # features[10] *= np.random.uniform(0.9, 1.1)
                 
                 X_train.append(features)
                 y_train.append(class_id)
@@ -2203,15 +2125,23 @@ class RandomForestLearninAttube:
             cv=5,
             scoring='accuracy',
             n_jobs=-1
+            
         )
         
-        grid_search.fit(X_train_scaled, y_train_split)
+        n_jobs = len(ParameterGrid(param_grid)) * 5
+        print("🔍 Training LearninAttube Model...")
+        with tqdm_joblib(tqdm(total=n_jobs,disable=True)):
+            # self.trend_model.fit(X_train_scaled, y_trend_train_s)
+            grid_search.fit(X_train_scaled, y_train_split)
         self.model = grid_search.best_estimator_
+
+        
+    
         
         # Evaluate
         # y_pred = self.model.predict(X_val_scaled)
         
-        labels = sorted(set(y_val))
+        # labels = sorted(set(y_val))
         # target_names = [self.Learning_attitude[i] for i in labels]
         
         # print("Best parameters:", grid_search.best_params_)
@@ -2228,8 +2158,8 @@ class RandomForestLearninAttube:
         #     'percent_time_study'
         # ]
         
-        importances = self.model.feature_importances_
-        indices = np.argsort(importances)[::-1]
+        # importances = self.model.feature_importances_
+        # indices = np.argsort(importances)[::-1]
         
         # print("\nFeature Importance:")
         # for i in range(len(feature_names)):
@@ -2268,22 +2198,10 @@ class RandomForestLearninAttube:
     
     
     def predict(self, data, return_proba=False):
-        # """
-            
-        # Returns:
-        # --------
-        # dict : Dictionary chứa kết quả dự đoán
-        #     - 'prediction': Class ID được dự đoán
-        #     - 'attitude': Tên learning attitude
-        #     - 'confidence': Độ tin cậy của dự đoán
-        #     - 'probabilities': Xác suất cho mỗi class (nếu return_proba=True)
-        # """
-        
-        # # Kiểm tra model đã được train chưa
         if not self.is_trained:
-            raise ValueError("Model chưa được train. Hãy gọi train() trước!")
+            self.train()
         
-        # # Extract features nếu input là dict
+        
         if isinstance(data, dict):
             features = self.extract_features_lesson(data)
         elif isinstance(data, (np.ndarray, list)):
@@ -2320,10 +2238,8 @@ class RandomForestLearninAttube:
         
         return result
     
-    def save_model(self, filepath: str):
-        """
-        Lưu RandomForestLearninAttube model vào file
-        """
+    def save_model(self,pathsave = './model/', filename = 'attitude_model.joblib'):
+      
         if not self.is_trained:
             raise ValueError("Model chưa được train. Hãy gọi train() trước!")
         
@@ -2335,30 +2251,24 @@ class RandomForestLearninAttube:
             'model_type': 'RandomForestLearninAttube'
         }
         
-        
-        os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
+        filepath = os.path.join(pathsave, f"{filename}")
+        os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else './model/', exist_ok=True)
         
         joblib.dump(model_data, filepath)
-        print(f"✅ RandomForestLearninAttube model đã được lưu tại: {filepath}")
+        print(f"✅ {self.model} model đã được lưu tại: {filepath}")
     
     def load_model(self, filepath: str):
-        """
-        Load RandomForestLearninAttube model từ file
-        """
+   
         if not os.path.exists(filepath):
             raise FileNotFoundError(f"File không tồn tại: {filepath}")
         
         model_data = joblib.load(filepath)
         
-        # Kiểm tra loại model
-        if model_data.get('model_type') != 'RandomForestLearninAttube':
-            raise ValueError("File không phải của RandomForestLearninAttube model")
         
         self.model = model_data['model']
         self.scaler = model_data['scaler']
         self.is_trained = model_data['is_trained']
         
-        print(f"✅ RandomForestLearninAttube model đã được load từ: {filepath}")
         
     @classmethod
     def load_pretrained(cls, filepath: str):
@@ -2368,107 +2278,7 @@ class RandomForestLearninAttube:
         instance = cls()
         instance.load_model(filepath)
         return instance
-    
-class ModelManager:
-    """
-    Quản lý việc lưu và load tất cả models trong hệ thống
-    """
-    
-    @staticmethod
-    def save_all_models(learning_strategy_ai: LearningStrategyAI, 
-                    #    random_forest_attitude: RandomForestLearninAttube,
-                       base_path: str = "./models/"):
-        """
-        Lưu tất cả models vào thư mục
-        """
-        if not os.path.exists(base_path):
-            os.makedirs(base_path, exist_ok=True)
-        
-        # Save LearningStrategyAI
-        if learning_strategy_ai.is_trained:
-            strategy_path = os.path.join(base_path, "learning_strategy_ai.joblib")
-            learning_strategy_ai.save_model(strategy_path)
-        else:
-            print("⚠️ LearningStrategyAI chưa được train, skip save")
-            
-        # # Save RandomForestLearninAttube  
-        # if random_forest_attitude.is_trained:
-        #     attitude_path = os.path.join(base_path, "random_forest_attitude.joblib")
-        #     random_forest_attitude.save_model(attitude_path)
-        # else:
-        #     print("⚠️ RandomForestLearninAttube chưa được train, skip save")
-            
-        # print(f"\n🎯 Tất cả models đã được lưu trong: {base_path}")
-    
-    @staticmethod
-    def load_all_models(base_path: str = "./models/") -> tuple:
-        """
-        Load tất cả models từ thư mục
-        
-        Returns:
-            tuple: (LearningStrategyAI, RandomForestLearninAttube)
-        """
-        strategy_path = os.path.join(base_path, "learning_strategy_ai.joblib")
-        attitude_path = os.path.join(base_path, "random_forest_attitude.joblib")
-        
-        learning_strategy_ai = None
-        random_forest_attitude = None
-        
-        # Load LearningStrategyAI
-        if os.path.exists(strategy_path):
-            learning_strategy_ai = LearningStrategyAI.load_pretrained(strategy_path)
-        else:
-            print(f"⚠️ Không tìm thấy file: {strategy_path}")
-            learning_strategy_ai = LearningStrategyAI()
-            
-        # Load RandomForestLearninAttube
-        if os.path.exists(attitude_path):
-            random_forest_attitude = RandomForestLearninAttube.load_pretrained(attitude_path)
-        else:
-            print(f"⚠️ Không tìm thấy file: {attitude_path}")
-            random_forest_attitude = RandomForestLearninAttube()
-            
-        print(f"🔄 Models đã được load từ: {base_path}")
-        return learning_strategy_ai, random_forest_attitude
-    
-    @staticmethod
-    def create_model_info(base_path: str = "./models/") -> dict:
-        """
-        Tạo thông tin về các models đã lưu
-        """
-        info = {
-            'base_path': base_path,
-            'models': {},
-            'created_at': datetime.now().isoformat()
-        }
-        
-        # Check LearningStrategyAI
-        strategy_path = os.path.join(base_path, "learning_strategy_ai.joblib")
-        if os.path.exists(strategy_path):
-            stat = os.stat(strategy_path)
-            info['models']['learning_strategy_ai'] = {
-                'file_path': strategy_path,
-                'file_size_mb': round(stat.st_size / 1024 / 1024, 2),
-                'modified_at': datetime.fromtimestamp(stat.st_mtime).isoformat(),
-                'exists': True
-            }
-        else:
-            info['models']['learning_strategy_ai'] = {'exists': False}
-            
-        # Check RandomForestLearninAttube
-        attitude_path = os.path.join(base_path, "random_forest_attitude.joblib")
-        if os.path.exists(attitude_path):
-            stat = os.stat(attitude_path)
-            info['models']['random_forest_attitude'] = {
-                'file_path': attitude_path,
-                'file_size_mb': round(stat.st_size / 1024 / 1024, 2),
-                'modified_at': datetime.fromtimestamp(stat.st_mtime).isoformat(),
-                'exists': True
-            }
-        else:
-            info['models']['random_forest_attitude'] = {'exists': False}
-            
-        return info
+
 
 
     
@@ -2884,7 +2694,7 @@ class AITrackingDataCollector:
 
         performance_trends = self._analyze_performance_trends(df)
         
-      
+    
         difficulty_analysis = self._analyze_difficulty_performance(df, user_id)
         
         
@@ -3077,21 +2887,21 @@ class AITrackingDataCollector:
                 'avg_score': round(np.mean(scores), 2)
             }
         
-        # Phân tích mối quan hệ thời gian vs hiệu suất
+     
         correlation = 0
         if len(time_data) > 1:
             try:
-                # Lọc dữ liệu hợp lệ
+                
                 valid_time = time_data['timeTaken'].dropna()
                 valid_percentage = time_data['percentage'].dropna()
                 
-                # Đảm bảo cùng index để tính correlation chính xác
+               
                 common_index = valid_time.index.intersection(valid_percentage.index)
                 if len(common_index) >= 2:
                     time_values = valid_time.loc[common_index]
                     percentage_values = valid_percentage.loc[common_index]
                     
-                    # Kiểm tra xem có variance không (tránh correlation với constant values)
+                    
                     if time_values.std() > 0 and percentage_values.std() > 0:
                         correlation = np.corrcoef(time_values, percentage_values)[0, 1]
                         if np.isnan(correlation) or np.isinf(correlation):
@@ -3425,15 +3235,14 @@ class AITrackingDataCollector:
             }
         
         df = pd.DataFrame(notes)
-        
-        # Thống kê ghi chú
+    
         note_stats = {
             'total_notes': len(df),
             'by_type': df['type'].value_counts().to_dict() if 'type' in df.columns else {},
             'by_status': df['status'].value_counts().to_dict() if 'status' in df.columns else {}
         }
         
-        # Phân tích nội dung ghi chú
+        
         content_analysis = {}
         if 'content' in df.columns:
             content_lengths = df['content'].str.len()
@@ -3512,10 +3321,10 @@ class AITrackingDataCollector:
         df['timestamp'] = pd.to_datetime(df['timestamp'])
         df['hour'] = df['timestamp'].dt.hour
         
-        # Phân tích theo giờ
+       
         hourly_activity = df.groupby('hour').size().to_dict()
         
-        # Tìm thời gian xem video cao điểm
+        
         peak_hours = sorted(hourly_activity.items(), key=lambda x: x[1], reverse=True)[:3]
         
         return {
@@ -3529,7 +3338,7 @@ class AITrackingDataCollector:
         
         patterns = {}
         
-        # Phân tích theo thời gian
+      
         if 'timestamp' in df.columns:
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             df['hour'] = df['timestamp'].dt.hour
@@ -3592,23 +3401,23 @@ class AITrackingDataCollector:
         scores = []
         weights = []
         
-        # Lesson completion score (40%)
+       
         lesson_score = lesson_analysis.get('completion_stats', {}).get('completion_rate', 0)
         scores.append(lesson_score)
         weights.append(0.4)
         
-        # Video interaction score (25%)
+      
         video_behavior = video_analysis.get('viewing_behavior', {})
         video_score = video_behavior.get('focus_score', 0)
         scores.append(video_score)
         weights.append(0.25)
         
-        # Content interaction score (20%)
+       
         content_score = min(content_analysis.get('total_activities', 0) * 5, 100)
         scores.append(content_score)
         weights.append(0.2)
         
-        # Notes engagement score (15%)
+        
         notes_score = notes_analysis.get('engagement_level_score', 0)
         if isinstance(notes_analysis.get('engagement_level', {}), dict):
             notes_score = notes_analysis.get('engagement_level', {}).get('score', 0)
@@ -3645,6 +3454,15 @@ class AITRACKING:
     def __init__(self, db):
         self.db = db
         self.data = AITrackingDataCollector(self.db)
+        self.feature_names = [
+            'total_lessons', 'total_video_duration', 'course_level', 'course_duration_hours',
+            'total_activities', 'video_play_count', 'current_streak', 'longest_streak',
+            'total_learning_time', 'focus_score',
+            'total_assessment_attempts', 'avg_assessment_percentage', 'assessment_pass_rate',
+            'performance_trend_slope', 'easy_question_accuracy', 'medium_question_accuracy',
+            'hard_question_accuracy', 'avg_assessment_time',
+            'lesson_completion_rate', 'video_completion_rate', 'total_notes', 'overall_engagement_score'
+        ]
     def extract_features_aitrack(self, data):
         """Chuẩn hóa dữ liệu từ AITracking thành feature vector"""
 
@@ -3706,7 +3524,7 @@ class AITRACKING:
 
         final_features = [float(f) if isinstance(f, (int, float)) else 0.0 for f in features]
         
-        print(final_features)
+        # print(final_features)
         
        
         
@@ -3728,6 +3546,7 @@ class AITRACKING:
         training_features = []
         trend_labels = []
         score_labels = []
+        self.is_trained = False
         
         for student in students:
             studentId = student['id']
@@ -3738,7 +3557,7 @@ class AITRACKING:
             if features is not None and len(features) > 0:
                 training_features.append(features)
                 
-                # Dự đoán xu hướng từ engagement patterns
+               
                 engagement_score = data.get('content_interaction', {}).get('overall_engagement_score', {}).get('overall_score', 0)
                 focus_score = data.get('learning_activities', {}).get('learning_behavior', {}).get('focus_patterns', {}).get('focus_score', 50)
                 
@@ -3750,13 +3569,13 @@ class AITRACKING:
                 else:
                     trend_labels.append(0) 
                 
-                # Tạo label cho điểm cuối kỳ dự kiến (0-100)
-                predicted_score = min(100, max(0, 
-                    engagement_score * 40 + 
-                    (focus_score / 100) * 35 + 
-                    (data.get('learning_activities', {}).get('total_activities', 0) / 10) * 25
+             
+                predicted_score = min(10, max(0, 
+                    engagement_score * 4 + 
+                    (focus_score / 100) * 3.5 + 
+                    (data.get('learning_activities', {}).get('total_activities', 0) / 10) * 2.5
                 ))
-                score_labels.append(predicted_score)
+                score_labels.append(round(predicted_score, 2))
         
         if len(training_features) == 0:
             print("❌ Không có dữ liệu training")
@@ -3766,64 +3585,86 @@ class AITRACKING:
         y_trend = np.array(trend_labels)
         y_score = np.array(score_labels)
         
-        # Chia dữ liệu train/test
+      
         X_train, X_test, y_trend_train, y_trend_test, y_score_train, y_score_test = train_test_split(
             X, y_trend, y_score, test_size=0.3, random_state=42, stratify=y_trend
         )
         
-        # Chuẩn hóa dữ liệu
+        
         self.performance_scaler = StandardScaler()
         X_train_scaled = self.performance_scaler.fit_transform(X_train)
         X_test_scaled = self.performance_scaler.transform(X_test)
         
-        # Model dự đoán xu hướng
-        self.trend_model = RandomForestClassifier(
-            n_estimators=100,
-            max_depth=10,
-            min_samples_split=5,
-            min_samples_leaf=2,
-            class_weight='balanced',
-            random_state=42,
-            n_jobs=-1
+       
+        param_grid_clf = {
+            "n_estimators": [100, 200, 300],
+            "max_depth": [5, 10, 15, None],
+            "min_samples_split": [2, 5, 10],
+            "min_samples_leaf": [1, 2, 4],
+            "class_weight": ["balanced", None]
+        }
+
+        clf = RandomForestClassifier(random_state=42, n_jobs=-1)
+
+        self.trend_model = GridSearchCV(
+            estimator=clf,
+            param_grid=param_grid_clf,
+            scoring="accuracy",  
+            cv=3,
+            n_jobs=-1,
+            verbose=0
+        )
+        param_grid_reg = {
+            "n_estimators": [100, 200, 300],
+            "max_depth": [5, 10, 15, None],
+            "min_samples_split": [2, 5, 10],
+            "min_samples_leaf": [1, 2, 4]
+        }
+
+        reg = RandomForestRegressor(random_state=42, n_jobs=-1)
+
+        self.score_model = GridSearchCV(
+            estimator=reg,
+            param_grid=param_grid_reg,
+            scoring="neg_mean_squared_error",   
+            cv=3,
+            n_jobs=-1,
+            verbose=0
         )
         
-        # Model dự đoán điểm số
+        n_jobs_clf = len(ParameterGrid(param_grid_clf)) * 3  
+        n_jobs_reg = len(ParameterGrid(param_grid_reg)) * 3
         
-        self.score_model = RandomForestRegressor(
-            n_estimators=100,
-            max_depth=10,
-            min_samples_split=5,
-            min_samples_leaf=2,
-            random_state=42,
-            n_jobs=-1
-        )
-        
-        # Huấn luyện models
-        self.trend_model.fit(X_train_scaled, y_trend_train)
-        self.score_model.fit(X_train_scaled, y_score_train)
-        
-        # Đánh giá models
+        print("🔍 Training Trend Model...")
+        with tqdm_joblib(tqdm(total=n_jobs_clf, disable=True)) as progress:
+            self.trend_model.fit(X_train_scaled, y_trend_train)
+        print("🔍 Training Score Model...")
+        with tqdm_joblib(tqdm(total=n_jobs_reg, disable=True)) as progress:
+            self.score_model.fit(X_train_scaled, y_score_train)
+                
+   
+        # self.trend_model.fit(X_train_scaled, y_trend_train)
+        # self.score_model.fit(X_train_scaled, y_score_train)
+
         trend_pred = self.trend_model.predict(X_test_scaled)
         score_pred = self.score_model.predict(X_test_scaled)
-        
+
         trend_accuracy = accuracy_score(y_trend_test, trend_pred)
-    
         score_mse = mean_squared_error(y_score_test, score_pred)
         score_r2 = r2_score(y_score_test, score_pred)
-        
+
         print(f"✅ Trend Model - Accuracy: {trend_accuracy:.4f}")
         print(f"✅ Score Model - MSE: {score_mse:.4f}, R²: {score_r2:.4f}")
-        
+        self.is_trained = True
         return {
             'trend_accuracy': trend_accuracy,
             'score_mse': score_mse,
             'score_r2': score_r2,
-            'trend_feature_importance': self.trend_model.feature_importances_,
-            'score_feature_importance': self.score_model.feature_importances_
+            'trend_feature_importance': self.trend_model.best_estimator_.feature_importances_,
+            'score_feature_importance': self.score_model.best_estimator_.feature_importances_
         }
     
     def predict_performance(self, features):
-        """Dự đoán xu hướng và điểm số từ features"""
         if not hasattr(self, 'trend_model') or not hasattr(self, 'score_model'):
             return {
                 'trend_prediction': 'unknown',
@@ -3835,7 +3676,7 @@ class AITRACKING:
         
         features_scaled = self.performance_scaler.transform([features])
         
-        # Dự đoán xu hướng
+      
         trend_pred = self.trend_model.predict(features_scaled)[0]
         trend_proba = self.trend_model.predict_proba(features_scaled)[0]
         trend_confidence = max(trend_proba)
@@ -3843,15 +3684,17 @@ class AITRACKING:
         trend_labels = ['giảm', 'ổn định', 'tăng']
         trend_prediction = trend_labels[trend_pred]
         
-        # Dự đoán điểm số
-        predicted_score = max(0, min(100, self.score_model.predict(features_scaled)[0]))
+       
+        predicted_score = max(0, min(10, self.score_model.predict(features_scaled)[0]))
         
-        # Tính confidence cho điểm số (dựa trên variance của trees)
-        score_predictions = [tree.predict(features_scaled)[0] for tree in self.score_model.estimators_]
+        
+        
+        score_predictions = [tree.predict(features_scaled)[0] for tree in self.score_model.best_estimator_.estimators_]
+
         score_std = np.std(score_predictions)
-        score_confidence = max(0, 1 - (score_std / 50))  # Normalize to 0-1
+        score_confidence = round(max(0, 1 - (score_std / 50)),2)
         
-        # Xác định performance level
+       
         if predicted_score >= 85:
             performance_level = 'excellent'
         elif predicted_score >= 70:
@@ -3868,26 +3711,27 @@ class AITRACKING:
             'score_confidence': score_confidence,
             'performance_level': performance_level,
             'trend_probabilities': {
-                'giảm': trend_proba[0],
-                'ổn định': trend_proba[1],
-                'tăng': trend_proba[2]
+                'giảm': round(trend_proba[0],2),
+                'ổn định': round(trend_proba[1],2),
+                'tăng': round(trend_proba[2],2)
             }
         }
     
-    def save_model(self, filename='aitrack_model.pkl'):
+    def save_model(self,pathsave = './model/' ,filename='aitrack_model.joblib'):
         """Lưu model đã huấn luyện"""
-        import joblib
         
         model_data = {
             'trend_model': self.trend_model if hasattr(self, 'trend_model') else None,
             'score_model': self.score_model if hasattr(self, 'score_model') else None,
-            'performance_scaler': self.performance_scaler if hasattr(self, 'performance_scaler') else None
+            'performance_scaler': self.performance_scaler if hasattr(self, 'performance_scaler') else None,
+            'model_type': 'AITracking'
         }
-        
-        joblib.dump(model_data, filename)
-        print(f"✅ Đã lưu model vào {filename}")
+        filepath = os.path.join(pathsave, f"{filename}")
+        os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
+        joblib.dump(model_data, filepath)
+        print(f"✅ Đã lưu model vào {filepath}")
     
-    def load_model(self, filename='aitrack_model.pkl'):
+    def load_model(self, filename='aitrack_model.joblib'):
         """Tải model đã huấn luyện"""
         import joblib
         
@@ -3902,25 +3746,159 @@ class AITRACKING:
             print(f"❌ Lỗi khi tải model: {e}")
             return False
     
+    def _predict_completion_date(self, student_data):
+        from datetime import datetime, timedelta
+
+        def get_nested(d, keys, default=0):
+            for key in keys:
+                if isinstance(d, dict):
+                    d = d.get(key)
+                else:
+                    return default
+            return d if d is not None else default
+
+        total_lessons = get_nested(student_data, ['basic_progress', 0, 'totalLessons'])
+        completion_rate = get_nested(student_data, ['content_interaction', 'lesson_progress_analysis', 'completion_stats', 'completion_rate']) / 100.0
+        
+        if total_lessons == 0:
+            return {'status': 'missing_data', 'reason': 'Không có thông tin về tổng số bài học.'}
+
+        completed_lessons = total_lessons * completion_rate
+        remaining_lessons = total_lessons - completed_lessons
+
+        if remaining_lessons <= 0:
+            return {'status': 'completed', 'reason': 'Tất cả bài học đã được hoàn thành.'}
+
+        total_learning_time_sec = get_nested(student_data, ['learning_activities', 'time_analysis', 'total_learning_time'])
+        
+        unique_learning_days = get_nested(student_data, ['learning_activities', 'engagement_patterns', 'learning_streak', 'total_learning_days'])
+
+        if completed_lessons > 0 and total_learning_time_sec > 0:
+            avg_time_per_lesson_sec = total_learning_time_sec / completed_lessons
+        else:
+            duration_hours = get_nested(student_data, ['basic_progress', 0, 'durationHours'])
+            if duration_hours > 0 and total_lessons > 0:
+                avg_time_per_lesson_sec = (duration_hours * 3600) / total_lessons
+            else:
+                avg_time_per_lesson_sec = 20 * 60 
+
+        estimated_remaining_time_sec = remaining_lessons * avg_time_per_lesson_sec
+
+        if unique_learning_days > 0 and total_learning_time_sec > 0:
+            study_pace_sec_per_day = total_learning_time_sec / unique_learning_days
+        else:
+            study_pace_sec_per_day = 3600 
+        
+        if study_pace_sec_per_day == 0:
+             return {'status': 'missing_data', 'reason': 'Không thể tính toán tốc độ học tập (thời gian học mỗi ngày).'}
+
+        days_needed = estimated_remaining_time_sec / study_pace_sec_per_day
+        
+        predicted_date = datetime.now() + timedelta(days=days_needed)
+
+        return {
+            'status': 'in_progress',
+            'predicted_completion_date': predicted_date.isoformat(),
+            'days_remaining': round(days_needed, 1)
+        }
+
     def analyze_student(self, student_data):
-        """Phân tích toàn diện một học sinh"""
-        # Trích xuất features
+        """Phân tích toàn diện một học sinh, bao gồm giải thích cho dự đoán."""
+       
         features = self.extract_features_aitrack(student_data)
         
-        # Dự đoán hiệu suất
+       
         performance_result = self.predict_performance(features)
         
-        # Gợi ý chiến lược
-        strategy_result = self.suggest_learning_strategy(features, performance_result)
         
+        completion_prediction = self._predict_completion_date(student_data)
+        performance_result['completion_prediction'] = completion_prediction
+        
+      
+        if hasattr(self, 'trend_model') and hasattr(self, 'score_model'):
+           
+            trend_importances = self.trend_model.best_estimator_.feature_importances_
+            trend_feature_map = sorted(zip(self.feature_names, trend_importances), key=lambda x: x[1], reverse=True)
+            top_trend_features = trend_feature_map[:4]
+
+          
+            score_importances = self.score_model.best_estimator_.feature_importances_
+            score_feature_map = sorted(zip(self.feature_names, score_importances), key=lambda x: x[1], reverse=True)
+            top_score_features = score_feature_map[:4]
+
+            # explanation = {
+            #     "summary": "Dự đoán được đưa ra dựa trên các yếu tố quan trọng nhất sau:",
+            #     "trend_influencers": [
+            #         {
+            #             "feature": name,
+            #             "importance": round(float(importance), 4),
+            #             "student_value": features[self.feature_names.index(name)]
+            #         }
+            #         for name, importance in top_trend_features
+            #     ],
+            #     "score_influencers": [
+            #         {
+            #             "feature": name,
+            #             "importance": round(float(importance), 4),
+            #             "student_value": features[self.feature_names.index(name)]
+            #         }
+            #         for name, importance in top_score_features
+            #     ]
+            # }
+            # performance_result['explanation'] = explanation
+
         return {
             'student_id': student_data.get('user_id'),
             'course_id': student_data.get('course_id'),
             'features': features.tolist(),
             'performance_prediction': performance_result,
-            'learning_strategy': strategy_result,
             'analysis_timestamp': student_data.get('collected_at')
         }
+        
+class ModelManager:
+    
+    @staticmethod
+    def save_all_models(models: list, base_path: str = "./models/"):
+        """
+        Lưu tất cả models vào thư mục, tự động đặt tên file theo class
+        """
+        if not os.path.exists(base_path):
+            os.makedirs(base_path, exist_ok=True)
+        
+        for model in models:
+            if hasattr(model, "is_trained") and model.is_trained:
+                model_name = model.__class__.__name__.lower()
+                file_path = os.path.join(base_path, f"{model_name}.joblib")
+                model.save_model(file_path)
+                print(f"✅ Saved {model.__class__.__name__} -> {file_path}")
+            else:
+                print(f"⚠️ {model.__class__.__name__} chưa được train, skip save")
+        
+        print(f"\n🎯 Tất cả models đã được lưu trong: {base_path}")
+    
+
+    @staticmethod
+    def load_all_models(model_classes: list, base_path: str = "./models/") -> list:
+        """
+        Load tất cả models từ thư mục
+        """
+        loaded_models = []
+        
+        for model_class in model_classes:
+            model_name = model_class.__name__.lower()
+            file_path = os.path.join(base_path, f"{model_name}.joblib")
+            
+            if os.path.exists(file_path):
+                model = model_class.load_pretrained(file_path)
+                print(f"🔄 Loaded {model_name} từ {file_path}")
+            else:
+                print(f"⚠️ Không tìm thấy file: {file_path}, khởi tạo model mới")
+                model = model_class()
+            
+            loaded_models.append(model)
+        
+        return loaded_models
+
         
         
 # class LearningUserProfile:
@@ -3960,9 +3938,11 @@ if __name__ == "__main__":
         Ai = LearningStrategyAI()
         cm = ContentRecommender()
         test = Ai.extract_features(analysis)
+        trls = Ai.train_model()
         # # print(f"🔍 test features: {test}")
         # # print("🔍 Calling predict_strategy...")
         result = Ai.predict_strategy(test)
+        Ai.save_model()
         # # print(f"🔍 Raw result: {result}")
         # # print(f"🔍 Type of result: {type(result)}")
 
@@ -3973,16 +3953,18 @@ if __name__ == "__main__":
         student_data = pretrack.collect_comprehensive_data("user-student-01", "course-html-css")
         
         # # Khởi tạo AITRACKING model
-        # aitrack_model = AITRACKING(db_manager)
-        # t = aitrack_model.train_performance_model()
-        # p = aitrack_model.predict_performance()
+        aitrack_model = AITRACKING(db_manager)
+        t = aitrack_model.train_performance_model()
+        features = aitrack_model.extract_features_aitrack(student_data)
+        p = aitrack_model.predict_performance(features)
+        aitrack_model.save_model()
         # # Test extract features
-        # features = aitrack_model.extract_features_aitrack(student_data)
+       
         # print(f"✅ Features extracted: {len(features)} features")
-        # print(f"Features: {features}")
-        
+    
         # # Test phân tích học sinh (không có model được train)
         # analysis_result = aitrack_model.analyze_student(student_data)
+   
         # print(f"✅ Student Analysis:")
         # print(f"Student ID: {analysis_result['student_id']}")
         # print(f"Performance Level: {analysis_result['performance_prediction']['performance_level']}")
@@ -3996,47 +3978,47 @@ if __name__ == "__main__":
         # Lưu model
         # aitrack_model.save_model('demo_aitrack_model.pkl')
         # print("I'm Here ", testo)
-        # learning = Learning_assessment(db_manager)
-        # tesst = learning.learning_analytics_data("user-student-14", "lesson-html-tags")
-        # rd = RandomForestLearninAttube()
-        # t = rd.extract_features_lesson(tesst)
-        # tr = rd.train()
-        # r = rd.predict(tesst, return_proba = True)
+        learning = Learning_assessment(db_manager)
+        tesst = learning.learning_analytics_data("user-student-14", "lesson-html-tags")
+        rd = RandomForestLearninAttube()
+        t = rd.extract_features_lesson(tesst)
+        tr = rd.train()
+        r = rd.predict(tesst, return_proba = True)
+        rd.save_model()
         # print("\n=== Prediction Result ===")
-        # print(f"Predicted attitude: {r['attitude']}")
-        # print(f"Confidence: {r['confidence']:.2%}")
-        # print("\nProbabilities for each class:")
-        # for attitude, prob in r['probabilities'].items():
-        #     print(f"  {attitude}: {prob:.2%}")
+        print(f"Predicted attitude: {r['attitude']}")
+        print(f"Confidence: {r['confidence']:.2%}")
+        print("\nProbabilities for each class:")
+        for attitude, prob in r['probabilities'].items():
+            print(f"  {attitude}: {prob:.2%}")
         
      
         
-        # track = AITrackingDataCollector(db_manager)
-        # test = track.collect_comprehensive_data("user-student-01","course-html-css")
+
         # print(test)
         # test = track.collect_comprehensive_data
         # cm = ContentRecommender(db_manager)
         # cm_def = cm.recommend_lessons()
-        print("\n📊 KẾT QUẢ PHÂN TÍCH:")
-        print("Has data:", analysis.get("has_data"))
-        print("Total questions:", analysis.get("total_questions"))
-        print("Total time:", analysis.get("total_time"), "s")
-        print("Correct answers:", analysis.get("correct_answers"))
-        print("Overall accuracy:", analysis.get("overall_accuracy_percent"), "%")
-        print("Overall accuracy (decimal):", analysis.get("overall_accuracy"))
-        print("Reason: ", result[2].get('reason') )
+        # print("\n📊 KẾT QUẢ PHÂN TÍCH:")
+        # print("Has data:", analysis.get("has_data"))
+        # print("Total questions:", analysis.get("total_questions"))
+        # print("Total time:", analysis.get("total_time"), "s")
+        # print("Correct answers:", analysis.get("correct_answers"))
+        # print("Overall accuracy:", analysis.get("overall_accuracy_percent"), "%")
+        # print("Overall accuracy (decimal):", analysis.get("overall_accuracy"))
+        # print("Reason: ", result[2].get('reason') )
 
-        print("\n📈 Hiệu suất theo danh mục:")
-        print(json.dumps(analysis.get("assessment_attempt_performance", {}), indent=2, ensure_ascii=False))
+        # print("\n📈 Hiệu suất theo danh mục:")
+        # print(json.dumps(analysis.get("assessment_attempt_performance", {}), indent=2, ensure_ascii=False))
 
-        print("\n📉 Hiệu suất theo độ khó:")
-        print(json.dumps(analysis.get("difficulty_performance", {}), indent=2, ensure_ascii=False))
+        # print("\n📉 Hiệu suất theo độ khó:")
+        # print(json.dumps(analysis.get("difficulty_performance", {}), indent=2, ensure_ascii=False))
 
-        print("\n🚨 Danh mục yếu:")
-        print(json.dumps(analysis.get("weak_categories", []), indent=2, ensure_ascii=False))
+        # print("\n🚨 Danh mục yếu:")
+        # print(json.dumps(analysis.get("weak_categories", []), indent=2, ensure_ascii=False))
 
-        print("\n📚 Cơ hội cải thiện:")
-        print(json.dumps(analysis.get("avd_categories", []), indent=2, ensure_ascii=False))
+        # print("\n📚 Cơ hội cải thiện:")
+        # print(json.dumps(analysis.get("avd_categories", []), indent=2, ensure_ascii=False))
         
            # ===== MODEL SAVE/LOAD DEMO =====
         # print("\n" + "="*60)
@@ -4045,7 +4027,7 @@ if __name__ == "__main__":
         
         # # Save models after training
         # print("\n1. Lưu models sau khi train...")
-        # ModelManager.save_all_models(Ai, "./models/")
+        # ModelManager.save_all_models([trls, tr, t], "./models/")
         
         # # Show model info  
         # print("\n2. Thông tin models đã lưu:")
@@ -4076,25 +4058,25 @@ if __name__ == "__main__":
         # # print(f"🔍 analysis after assignment: {sdf}")
         # # # print(strategy)
         # # print(recomment[0])
-        if recomment:
-            for idx, lesson in enumerate(recomment, 1):
-                # print(lesson)
-                # print(lesson.get('lesson_id'))
-                print(f"\n{idx}. {lesson.get('title', 'N/A')}")
-                print(f"   📖  Khóa học: {lesson.get('course_title', 'N/A')}")
-                print(f"   🏷️  Danh mục: {lesson.get('category_name', 'N/A')}")
-                print(f"   ⭐  Độ ưu tiên: {lesson.get('priority_score', 0):.2f}")
-                print(f"   🤓  Độ khó: {lesson.get('difficulty')}")
-                print(f"   💡  Lý do: {lesson.get('recommendation_reason', 'N/A')}")
-                print(f"   💯  Tổng số câu hỏi của bài học: {lesson.get('total_question_lesson')}")
-                print(f"   🧠  Độ chính xác trong bài học: {lesson.get('lesson_accuracy')}%")
-                print(f"   🔗  Đường dẫn: {lesson.get('lesson_slug')}")
-                # Thông tin bổ sung nếu có
-                if 'error_count' in lesson:
-                    print(f"   ❌  Số lỗi: {lesson['error_count']}")
-                if 'questions_wrong' in lesson:
-                    # print(f"   ❓  Câu sai: {', '.join(lesson['questions_wrong'])}")
-                    print(f"   ❓  Câu sai: {' -> '.join(f'{q['title']}' for q in lesson['questions_wrong'])}")
+        # if recomment:
+        #     for idx, lesson in enumerate(recomment, 1):
+        #         # print(lesson)
+        #         # print(lesson.get('lesson_id'))
+        #         print(f"\n{idx}. {lesson.get('title', 'N/A')}")
+        #         print(f"   📖  Khóa học: {lesson.get('course_title', 'N/A')}")
+        #         print(f"   🏷️  Danh mục: {lesson.get('category_name', 'N/A')}")
+        #         print(f"   ⭐  Độ ưu tiên: {lesson.get('priority_score', 0):.2f}")
+        #         print(f"   🤓  Độ khó: {lesson.get('difficulty')}")
+        #         print(f"   💡  Lý do: {lesson.get('recommendation_reason', 'N/A')}")
+        #         print(f"   💯  Tổng số câu hỏi của bài học: {lesson.get('total_question_lesson')}")
+        #         print(f"   🧠  Độ chính xác trong bài học: {lesson.get('lesson_accuracy')}%")
+        #         print(f"   🔗  Đường dẫn: {lesson.get('lesson_slug')}")
+        #         # Thông tin bổ sung nếu có
+        #         if 'error_count' in lesson:
+        #             print(f"   ❌  Số lỗi: {lesson['error_count']}")
+        #         if 'questions_wrong' in lesson:
+        #             # print(f"   ❓  Câu sai: {', '.join(lesson['questions_wrong'])}")
+        #             print(f"   ❓  Câu sai: {' -> '.join(f'{q['title']}' for q in lesson['questions_wrong'])}")
                     
         #         learner_data = {
         #             'lesson_id': lesson.get('lesson_id'),

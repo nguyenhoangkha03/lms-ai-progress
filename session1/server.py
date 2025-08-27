@@ -13,9 +13,9 @@ from exampel import (
 )
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS cho all routes
+CORS(app)  
 
-# Global instances
+
 db_manager = None
 test_analyzer = None
 learning_strategy_ai = None
@@ -137,17 +137,16 @@ def recommend_lessons():
         if not user_id or not assessment_attemp_id:
             return jsonify({'error': 'user_id và assessment_id là required'}), 400
             
-        # Get performance analysis
+
         analysis = test_analyzer.analyze_user_performance(db_manager, user_id, assessment_attemp_id)
-        # analysis_begin = test_analyzer.analyze_user_begining(db_manager,questions)
-        # Extract features for strategy prediction
+   
         features = learning_strategy_ai.extract_features(analysis)
         
         # Predict strategy
         strategy, confidence, additional_info = learning_strategy_ai.predict_strategy(features)
         
         
-        # Get lesson recommendations
+    
         recommendations = content_recommender.recommend_lessons(db_manager, strategy, analysis)
         # print("Con cá con:", analysis_begin)
         
@@ -175,15 +174,14 @@ def predict_learning_attitude():
     try:
         data = request.get_json()
         user_id = data.get('user_id')
-        lesson_id = data.get('lesson_id', 'lesson-html-tags')  # default lesson
         
         if not user_id:
             return jsonify({'error': 'user_id là required'}), 400
             
-        # Get learning analytics data
-        analytics_data = learning_assessment.learning_analytics_data(user_id, lesson_id)
         
-        # Predict attitude
+        analytics_data = learning_assessment.learning_analytics_data(user_id)
+        
+       
         attitude_result = random_forest_model.predict(analytics_data, return_proba=True)
         
         return jsonify({
@@ -193,7 +191,6 @@ def predict_learning_attitude():
                 'confidence': attitude_result['confidence'],
                 'probabilities': attitude_result.get('probabilities', {}),
                 'user_id': user_id,
-                'lesson_id': lesson_id
             },
             'timestamp': datetime.now().isoformat()
         })
@@ -207,7 +204,6 @@ def predict_learning_attitude():
 
 @app.route('/api/comprehensive-analysis', methods=['POST'])
 def comprehensive_analysis():
-    """Phân tích toàn diện user (performance + strategy + recommendations + attitude)"""
     try:
         data = request.get_json()
         user_id = data.get('user_id')
@@ -297,16 +293,16 @@ def retrain_models():
         
         print("Starting model retraining...")
         
-        # Retrain LearningStrategyAI
+     
         learning_strategy_ai.train_model()
         print("LearningStrategyAI retrained")
+        learning_strategy_ai.save_model()
         
         # Retrain RandomForestLearninAttube
         random_forest_model.train()
         print("RandomForestLearninAttube retrained")
+        random_forest_model.train()
         
-        # Save retrained models
-        ModelManager.save_all_models(learning_strategy_ai, random_forest_model, "./models/")
         print("Retrained models saved")
         
         return jsonify({
