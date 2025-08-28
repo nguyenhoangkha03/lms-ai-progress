@@ -30,14 +30,14 @@ def initialize_models():
     global learning_assessment, random_forest_model, ai_tracking_collector
     
     try:
-   
+        # Database connection
         db_manager = DatabaseManager()
         conn = db_manager.connect()
         
         if not conn:
             raise Exception("Không thể kết nối database")
             
-       
+        # Initialize models
         test_analyzer = TestAnalyzer()
         learning_strategy_ai = LearningStrategyAI()
         content_recommender = ContentRecommender()
@@ -71,6 +71,9 @@ def initialize_models():
             random_forest_model.save_model()
             ai_tracking.train_performance_model()
             ai_tracking.save_model()
+            
+            # Save trained models
+            # ModelManager.save_all_models([learning_strategy_ai, random_forest_model, ai_tracking], "./models/")
             print("Models trained and saved")
             
         return True
@@ -102,7 +105,7 @@ def recommend():
         if not questions:
             return jsonify({'error': 'thiếu danh sách câu hỏi'}), 400
             
-      
+        # Get performance analysis
         # analysis = test_analyzer.analyze_user_performance(db_manager, user_id, assessment_id)
         analysis_begin = test_analyzer.analyze_user_begining(db_manager,questions)
         # print(analysis_begin)
@@ -111,6 +114,9 @@ def recommend():
         # print(features)
         # Predict strategy
         strategy, confidence, additional_info = learning_strategy_ai.predict_strategy(features)
+        
+        
+        # Get lesson recommendations
         recommendations = content_recommender.recommend_lessons(db_manager, strategy, analysis_begin)
         # print("Con cá con:", analysis_begin)
         
@@ -207,7 +213,7 @@ def predict_learning_attitude():
             'error': str(e),
             'traceback': traceback.format_exc()
         }), 500
-        
+
 @app.route('/api/comprehensive-analysis', methods=['POST'])
 def comprehensive_analysis():
     try:

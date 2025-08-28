@@ -1615,7 +1615,7 @@ class Learning_assessment:
     
     def _get_session_analytics(self, user_id: str, now):
         where_clause = f""" 
-        WHERE lea.studentId = '{user_id}' AND MONTH(lea.date) = '{now.month} ORDER BY lea.date ASC'
+        WHERE lea.studentId = '{user_id}' AND MONTH(lea.date) = '{now.month} ORDER BY MONTH(lea.date) ASC'
         """
         learning_analytics = self.db.select("learning_analytics lea", "lea.totalTimeSpent, lea.readingTime, lea.videoWatchTime, lea.date", where_clause)
         days_gap_study = self._analytics_days_gap_study(learning_analytics)
@@ -1820,23 +1820,23 @@ class RandomForestLearninAttube:
         mean_time = features[6]
         percent_time_study = features[12]
 
-        # Hard_work (ID 0)
+        # Nới lỏng quy tắc cho Hard_work (ID 0)
         if mean_days_study_rate > 0.5 and std_days_gap < 2.5 and percent_time_study > 60:
             return 0
 
-        # Give_up (ID 3)
+        # Nới lỏng quy tắc cho Give_up (ID 3)
         if days_study < 4 and total_time < 8000:
             return 3
 
-        # Cramming (ID 4)
+        # Nới lỏng quy tắc cho Cramming (ID 4)
         if days_study < 10 and mean_time > 8500:
             return 4
 
-        # Lazy (ID 2)
+        # Nới lỏng quy tắc cho Lazy (ID 2)
         if mean_session_gap > 4 and percent_time_study < 45:
             return 2
 
-        # Distraction (ID 1)
+        # Nới lỏng quy tắc cho Distraction (ID 1)
         if features[10] > 7 and features[8] > 7000:
             return 1
 
@@ -1844,6 +1844,8 @@ class RandomForestLearninAttube:
 
 
     def train(self):
+   
+
         X_train = []
         y_train = []
 
@@ -1855,38 +1857,45 @@ class RandomForestLearninAttube:
         """
         students = self.db.select("users ur", "DISTINCT ur.id", where_clause)
 
-        for student in students:
+        feature_names = [
+            'days_study', 'mean_days_study_rate', 'std_days_gap', 'mean_session_gap',
+            'std_session_gap', 'total_time', 'mean_time', 'std_time', 'mean_duration',
+            'std_duration', 'mean_activities', 'std_activities', 'percent_time_study'
+        ]
+
+        print("\n--- BẮT ĐẦU PHÂN TÍCH DỮ LIỆU HUẤN LUYỆN ---")
+        for student in tqdm(students, desc=f"Đang xử lý dữ liệu cho {len(students)} sinh viên"):
             student_id = student['id']
             analytics_data = learning_assessor.learning_analytics_data(student_id)
+
+            # TẠM THỜI VÔ HIỆU HÓA ĐỂ GỠ LỖI
+            # if not analytics_data.get('session', {}).get('session'):
+            #     continue
 
             features = self.extract_features_lesson(analytics_data)
             if np.isnan(features).any() or np.isinf(features).any():
                 continue
 
             attitude_id = self._determine_attitude_id(features)
-            
-            # feature_names = [
-            #     'days_study', 'mean_days_study_rate', 'std_days_gap', 'mean_session_gap',
-            #     'std_session_gap', 'total_time', 'mean_time', 'std_time', 'mean_duration',
-            #     'std_duration', 'mean_activities', 'std_activities', 'percent_time_study'
-            # ]
-            # tqdm.write(f"\n----------------------------------------")
-            # tqdm.write(f"Student ID: {student_id}")
-            # tqdm.write("  Features:")
-            # for i, name in enumerate(feature_names):
-            #     tqdm.write(f"    - {name}: {features[i]}")
-            # tqdm.write(f"  --> Attitude ID: {attitude_id} ({self.Learning_attitude.get(attitude_id, 'Unknown')})")
-            # tqdm.write(f"----------------------------------------")
-            # ===============================================
+
+            tqdm.write(f"\n----------------------------------------")
+            tqdm.write(f"Student ID: {student_id}")
+            tqdm.write("  Features:")
+            for i, name in enumerate(feature_names):
+                tqdm.write(f"    - {name}: {features[i]}")
+            tqdm.write(f"  --> Attitude ID: {attitude_id} ({self.Learning_attitude.get(attitude_id, 'Unknown')})")
+            tqdm.write(f"----------------------------------------")
 
             X_train.append(features)
             y_train.append(attitude_id)
 
+        print("\n--- KẾT THÚC PHÂN TÍCH DỮ LIỆU ---\n")
 
         if not X_train:
             print("Không có đủ dữ liệu để huấn luyện model.")
             return None
 
+        print(f"Đã xử lý xong. Có {len(X_train)} mẫu training.")
         X_train = np.array(X_train)
         y_train = np.array(y_train)
 
@@ -1895,6 +1904,7 @@ class RandomForestLearninAttube:
 
         if min_class_count < 2:
             print(f"⚠️  Lớp nhỏ nhất chỉ có {min_class_count} thành viên. Không thể thực hiện GridSearchCV.")
+            print("     Mô hình sẽ được huấn luyện trực tiếp trên toàn bộ dữ liệu.")
             X_train_scaled = self.scaler.fit_transform(X_train)
             self.model.fit(X_train_scaled, y_train)
             self.is_trained = True
@@ -1908,8 +1918,9 @@ class RandomForestLearninAttube:
         X_train_scaled = self.scaler.fit_transform(X_train_split)
         X_test_scaled = self.scaler.transform(X_test_split)
 
+        # Tự động điều chỉnh số lượng split cho cross-validation
         n_splits = min(5, min(Counter(y_train_split).values()))
-        # print(f"ℹ️ Tự động điều chỉnh GridSearchCV cv={n_splits} vì lớp nhỏ nhất trong tập train có {min(Counter(y_train_split).values())} thành viên.")
+        print(f"ℹ️ Tự động điều chỉnh GridSearchCV cv={n_splits} vì lớp nhỏ nhất trong tập train có {min(Counter(y_train_split).values())} thành viên.")
 
         param_grid = {
             'n_estimators': [100, 200],
@@ -1929,8 +1940,8 @@ class RandomForestLearninAttube:
             n_jobs=-1
         )
 
-        print("🔍 Training Attitude Model...")
-        with tqdm_joblib(tqdm(total=len(ParameterGrid(param_grid)) * n_splits, disable= True    )):
+        print("🔍 Bắt đầu tìm kiếm tham số tối ưu với GridSearchCV...")
+        with tqdm_joblib(tqdm(total=len(ParameterGrid(param_grid)) * n_splits, desc="GridSearchCV Progress")):
             grid_search.fit(X_train_scaled, y_train_split)
 
         self.model = grid_search.best_estimator_
@@ -1958,35 +1969,46 @@ class RandomForestLearninAttube:
 
 
 
-
-   
+    # Helper function để tính percent_time_study cho real data
     def calculate_percent_time_study(total_time_spent, estimated_duration_minutes, video_duration_seconds=None):
-    
-       
+        """
+        Calculate percent_time_study consistently
+        
+        Args:
+            total_time_spent: Total time spent in seconds
+            estimated_duration_minutes: Estimated duration in minutes
+            video_duration_seconds: Video duration in seconds (optional)
+        
+        Returns:
+            percent_time_study as a percentage
+        """
+        # Convert estimated duration to seconds
         estimated_total = estimated_duration_minutes * 60
         
-    
+        # Add video duration if available
         if video_duration_seconds:
             estimated_total += video_duration_seconds
         
-      
+        # Avoid division by zero
         if estimated_total == 0:
             return 0
         
-       
+        # Calculate percentage
         return round((total_time_spent / estimated_total) * 100, 2)
     
     
     def predict_attitude(self, data, return_proba=False):
+        # Nếu model chưa train thì tiến hành train
         if not self.is_trained:
             self.train()
             if not self.is_trained:
                 raise RuntimeError(
                     "Không thể huấn luyện model do không đủ dữ liệu hoặc dữ liệu không đa dạng. "
-                    "Không thể thực hiện dự đoán. Vui lòng kiểm tra dữ liệu đầu vào hoặc các quy tắc "
-                    "trong hàm _determine_attitude_id()."
+                    "Không thể thực hiện dự đoán. Vui lòng kiểm tra dữ liệu đầu vào hoặc "
+                    "các quy tắc trong hàm _determine_attitude_id()."
                 )
-      
+
+       
         if isinstance(data, dict):
             features = self.extract_features_lesson(data)
         elif isinstance(data, (np.ndarray, list)):
@@ -1996,42 +2018,36 @@ class RandomForestLearninAttube:
         else:
             raise TypeError("Data must be dict or numpy array")
 
+      
         if features.ndim == 1:
             features = features.reshape(1, -1)
 
+      
         features_scaled = self.scaler.transform(features)
+
+        
         prediction = self.model.predict(features_scaled)[0]
         probabilities = self.model.predict_proba(features_scaled)[0]
-        
-        print(data)
-        sessions = data.get('session')
-        session = sessions.get('session')
-        total_day_off = sum(sessions.get('day_off'), 0)
-        duration_session = []
-        activities_session = []
-        for s in session:
-            duration_session.append(s.get('duration'))
-            activities_session.append(s.get('activitiesCount'))
-        total_duration = sum(duration_session, 0) / 3600
-        total_activitie = sum(activities_session, 0)
 
+        
         prob_dict = dict(zip(self.model.classes_, probabilities))
 
+       
         result = {
-            'prediction': int(prediction),
-            'attitude': self.Learning_attitude[prediction],
-            'confidence': float(np.max(probabilities)),
-            'reason': f"Bạn đã nghỉ {total_day_off} ngày, tổng thời gian online là {total_duration} giờ và tổng số thao tác là {total_activitie}"
+            "prediction": int(prediction),
+            "attitude": self.Learning_attitude[prediction],
+            "confidence": float(np.max(probabilities)),
+            "reason": "Dự đoán dựa trên dữ liệu phân tích."
         }
 
+        # Thêm xác suất đầy đủ nếu cần
         if return_proba:
-            result['probabilities'] = {
+            result["probabilities"] = {
                 attitude_name: float(prob_dict.get(class_id, 0.0))
                 for class_id, attitude_name in self.Learning_attitude.items()
             }
 
         return result
-
 
 
     
