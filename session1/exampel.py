@@ -74,7 +74,7 @@ class TestAnalyzer:
     def analyze_user_begining(self, db: DatabaseManager, questions):
         list_course = []
         course_stats = {}
-        # print(questions)
+        # print("Olalal", questions)
         
         # Initialize statistics
         total_questions = len(questions)
@@ -83,9 +83,10 @@ class TestAnalyzer:
                           'medium': {'correct': 0, 'total': 0}, 
                           'hard': {'correct': 0, 'total': 0}}
         for q in questions:
+            # print(q)
             question_id = q.get('questionId')
             answer = q.get('answer')
-            
+            # print("Check", answer)
             where_clause = f""" 
             JOIN questions qs ON qs.id = '{question_id}'
             JOIN assessments a ON a.id = qs.assessmentId
@@ -121,8 +122,10 @@ class TestAnalyzer:
                 
                 course_stats[course_id]['total_questions'] += 1
                 
-                print("xem thử:", course_data)
+                # print("Tao đây nè", answer)
+                # print("kiểu", type(answer))
                 if answer == False:
+                    # print("ohohohohoho")
                     course_stats[course_id]['wrong_answers'] += 1
                     
                     if question_difficulty == 'easy':
@@ -147,12 +150,12 @@ class TestAnalyzer:
                     'wrong_easy_questions': stats['wrong_easy']
                 }
                 
-            if stats['level'] == 'beginner':
-                beginner_courses.append(course_data)
-            elif stats['level'] == 'intermediate':
-                intermediate_courses.append(course_data)
-            elif stats['level'] == 'advanced':
-                advanced_courses.append(course_data)
+                if stats['level'] == 'beginner':
+                    beginner_courses.append(course_data)
+                elif stats['level'] == 'intermediate':
+                    intermediate_courses.append(course_data)
+                elif stats['level'] == 'advanced':
+                    advanced_courses.append(course_data)
         
     
         beginner_courses.sort(key=lambda x: x['wrong_easy_questions'], reverse=True)
@@ -168,7 +171,7 @@ class TestAnalyzer:
         learning_path.extend(intermediate_courses)
         learning_path.extend(advanced_courses)
         
-        # Calculate overall accuracy
+       
         overall_accuracy = correct_answers / total_questions if total_questions > 0 else 0
         
        
@@ -193,7 +196,7 @@ class TestAnalyzer:
                 weak_categories.append({
                     'course_name': course.get('course_title'), 
                     'accuracy_correct': accuracy_correct,
-                    'difficulty_question': 'medium',  # Default
+                    'difficulty_question': 'medium', 
                     'priority': 'HIGH' if course.get('wrong_easy_questions', 0) > 0 else 'MEDIUM',
                     'correct_answers': course.get('total_questions', 1) - course.get('wrong_answers', 0)
                 })
@@ -220,11 +223,9 @@ class TestAnalyzer:
             'has_data': total_questions > 0,
             'overall_accuracy': overall_accuracy,
             'total_questions': total_questions,
-            'total_time': 0,  # Not available in begining analysis
+            'total_time': 0,  
             'difficulty_performance': difficulty_performance,
             'weak_categories': weak_categories,
-            # 'lesson_recommendations': lesson_recommendations,
-            'hint_usage_rate': 0.0,  # Default value cho begining analysis
             'strategy_criteria': self._determine_strategy_criteria(overall_accuracy, difficulty_performance, len(weak_categories))
         }
     
@@ -801,8 +802,6 @@ class LearningStrategyAI:
                 #     X_train.append(features [:16])
                 #     y_train.append(4)
                     
-                    
-                # Cải thiện logic phân loại strategy dựa trên nhiều features
                 accuracy = features[0]
                 total_questions = features[1] 
                 hint_usage = features[2]
@@ -975,8 +974,11 @@ class LearningStrategyAI:
            
             model_evaluation = self._evaluate_prediction_quality(features, strategy_id, probabilities)
             
-            strategy = self.STRATEGIES[strategy_id]
-            confidence = float(probabilities[strategy_id])
+            # strategy = self.STRATEGIES[strategy_id]
+            # confidence = float(probabilities[strategy_id])
+            
+            strategy = self.STRATEGIES.get(strategy_id, "FALLBACK")
+            confidence = float(probabilities[strategy_id]) if strategy_id < len(probabilities) else 0.0
             
            
             # print(f"\n🤖 Kết quả dự đoán từ model:")
@@ -1009,7 +1011,7 @@ class LearningStrategyAI:
             print(f"❌ Lỗi khi sử dụng model: {e}")
             print("🔄 Sử dụng fallback strategy...")
             
-            # Fallback dựa trên rules đơn giản
+        
             fallback_strategy = self._get_fallback_strategy(features)
             
             return fallback_strategy, 0.5, {
@@ -1062,7 +1064,7 @@ class LearningStrategyAI:
         rule_based_strategy = self._get_rule_based_strategy(features)
         consistency_score = 1.0 if rule_based_strategy == self.STRATEGIES[predicted_strategy_id] else 0.5
         
-        # Tính tổng quality score
+ 
         quality_score = (certainty_score * 0.6 + consistency_score * 2.0 * 0.4)
         
         return {
@@ -1410,7 +1412,7 @@ class ContentRecommender:
             
             recommendation = {
                 
-                'priority_score': priority_score,
+                'priority_score': round(priority_score, 3),
                 'course_title': course_title,
                 'accuracy_percentage': f"{accuracy_percentage:.1f}%",
                 'correct_total_ratio': round(correct_answers/total_questions,2),
@@ -1499,7 +1501,7 @@ class ContentRecommender:
                 
                 recommendation = {
                    
-                    'priority_score': priority_score,
+                    'priority_score': round(priority_score, 3),
                     'course_title': course_title,
                     'lesson_title': lesson_title,
                     'lesson_accuracy_percentage': f"{lesson_accuracy:.1f}%",
@@ -1568,7 +1570,7 @@ class ContentRecommender:
                 
                 recommendation = {
                   
-                    'priority_score': priority_score,
+                    'priority_score': round(priority_score, 3),
                     'course_title': course_title,
                     'accuracy_percentage': f"{accuracy * 100:.1f}%",
                     'correct_total_ratio': f"{difficulty_correct}/{difficulty_questions}",
@@ -2137,10 +2139,6 @@ class RandomForestLearninAttube:
             # self.trend_model.fit(X_train_scaled, y_trend_train_s)
             grid_search.fit(X_train_scaled, y_train_split)
         self.model = grid_search.best_estimator_
-
-        
-    
-        
         # Evaluate
         # y_pred = self.model.predict(X_val_scaled)
         
@@ -2200,10 +2198,11 @@ class RandomForestLearninAttube:
     
     
     
-    def predict(self, data, return_proba=False):
+    def predict_attitude(self, data, return_proba=False):
         if not self.is_trained:
             self.train()
         
+       
         
         if isinstance(data, dict):
             features = self.extract_features_lesson(data)
@@ -2214,22 +2213,41 @@ class RandomForestLearninAttube:
         else:
             raise TypeError("Data must be dict or numpy array")
         
-        # # Reshape nếu cần
+        # print(data)
+        sessions = data.get("session")
+        session = sessions.get("session")
+        total_day_off = sum(sessions.get("day_off"))
+        count_session = len(session)
+        duration_list = []
+        for s in session:
+            duration_list.append(s['duration'])
+            
+        total_duration = int(sum(duration_list) / 3600)
+        print(total_duration)
+        print(count_session)
+        # print(data)
+     
+        
+    
+         
         if features.ndim == 1:
             features = features.reshape(1, -1)
         
-        # # Scale features
+
         features_scaled = self.scaler.transform(features)
         
-        # # Predict
+        
+        
+
         prediction = self.model.predict(features_scaled)[0]
         proba = self.model.predict_proba(features_scaled)[0]
         
-        # # Tạo kết quả
+
         result = {
             'prediction': int(prediction),
             'attitude': self.Learning_attitude[prediction],
             'confidence': float(np.max(proba)),
+            'reason' : f"Bạn đã nghỉ {total_day_off} ngày trong tháng và có số lần đăng nhập {count_session} lần và tổng thời gian hoạt động {total_duration} giờ"
         }
         
         if return_proba:
@@ -2247,17 +2265,17 @@ class RandomForestLearninAttube:
         Lưu trạng thái model (chỉ lưu phần serializable).
         Trả về đường dẫn file đã lưu.
         """
-        # Nếu caller truyền full path hoặc filename có thư mục, tôn trọng luôn
+      
         if os.path.isabs(filename) or os.path.dirname(filename):
             filepath = filename if os.path.isabs(filename) else os.path.join(pathsave, filename)
         else:
             filepath = os.path.join(pathsave, filename)
 
-        # tạo thư mục chứa file nếu chưa tồn tại
+        
         dirpath = os.path.dirname(filepath) or "."
         os.makedirs(dirpath, exist_ok=True)
 
-        # kiểm tra model đã train chưa
+      
         if not getattr(self, "is_trained", False):
             raise ValueError("Model chưa được train. Hãy gọi train() trước!")
 
@@ -2284,13 +2302,12 @@ class RandomForestLearninAttube:
          - hoặc tên file như 'attitude_model.joblib',
          - hoặc tên base như 'attitude' (hàm sẽ thử nhiều biến thể trong models_dir).
         """
-        # resolve đường dẫn
+        
         if os.path.isabs(filepath_or_name) or os.path.dirname(filepath_or_name):
             candidate = filepath_or_name
         else:
             candidate = os.path.join(models_dir, filepath_or_name)
 
-        # thử các biến thể nếu candidate không phải file
         if not os.path.isfile(candidate):
             candidates = [
                 candidate,
@@ -3185,7 +3202,6 @@ class AITrackingDataCollector:
                     'avg_attempts': float(type_stats.loc[lesson_type, ('attempts', 'mean')]) if pd.notna(type_stats.loc[lesson_type, ('attempts', 'mean')]) else 0
                 }
         
-        # Phân tích mô hình tiến độ
         progress_patterns = self._analyze_progress_patterns(df)
         
         return {

@@ -108,10 +108,10 @@ def recommend():
         # Get performance analysis
         # analysis = test_analyzer.analyze_user_performance(db_manager, user_id, assessment_id)
         analysis_begin = test_analyzer.analyze_user_begining(db_manager,questions)
-        print(analysis_begin)
+        # print(analysis_begin)
         # Extract features for strategy prediction
         features = learning_strategy_ai.extract_features(analysis_begin)
-        print(features)
+        # print(features)
         # Predict strategy
         strategy, confidence, additional_info = learning_strategy_ai.predict_strategy(features)
         
@@ -194,14 +194,14 @@ def predict_learning_attitude():
         analytics_data = learning_assessment.learning_analytics_data(user_id)
         
        
-        attitude_result = random_forest_model.predict(analytics_data, return_proba=True)
+        attitude_result = random_forest_model.predict_attitude(analytics_data, return_proba=True)
         
         return jsonify({
             'success': True,
             'data': {
                 'predicted_attitude': attitude_result['attitude'],
                 'confidence': attitude_result['confidence'],
-                'probabilities': attitude_result.get('probabilities', {}),
+                'reason': attitude_result.get('reason', {}),
                 'user_id': user_id,
             },
             'timestamp': datetime.now().isoformat()
@@ -225,17 +225,16 @@ def comprehensive_analysis():
         if not user_id or not assessment_id:
             return jsonify({'error': 'user_id và assessment_id là required'}), 400
             
-        # 1. Performance Analysis
         performance_analysis = test_analyzer.analyze_user_performance(db_manager, user_id, assessment_id)
         
-        # 2. Strategy Prediction
+      
         features = learning_strategy_ai.extract_features(performance_analysis)
         strategy, strategy_confidence, strategy_info = learning_strategy_ai.predict_strategy(features)
         
-        # 3. Lesson Recommendations
+       
         recommendations = content_recommender.recommend_lessons(db_manager, strategy, performance_analysis)
         
-        # 4. Learning Attitude Prediction
+        
         try:
             analytics_data = learning_assessment.learning_analytics_data(user_id, lesson_id)
             attitude_result = random_forest_model.predict(analytics_data, return_proba=True)
