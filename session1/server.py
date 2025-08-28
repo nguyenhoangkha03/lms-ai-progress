@@ -108,9 +108,10 @@ def recommend():
         # Get performance analysis
         # analysis = test_analyzer.analyze_user_performance(db_manager, user_id, assessment_id)
         analysis_begin = test_analyzer.analyze_user_begining(db_manager,questions)
+        print(analysis_begin)
         # Extract features for strategy prediction
         features = learning_strategy_ai.extract_features(analysis_begin)
-        
+        print(features)
         # Predict strategy
         strategy, confidence, additional_info = learning_strategy_ai.predict_strategy(features)
         
@@ -270,31 +271,31 @@ def comprehensive_analysis():
             'traceback': traceback.format_exc()
         }), 500
 
-@app.route('/api/models/info', methods=['GET'])
-def get_models_info():
-    """Lấy thông tin về các models"""
-    try:
-        model_info = ModelManager.create_model_info("./models/")
+# @app.route('/api/models/info', methods=['GET'])
+# def get_models_info():
+#     """Lấy thông tin về các models"""
+#     try:
+#         model_info = ModelManager.create_model_info("./models/")
         
-        return jsonify({
-            'success': True,
-            'data': {
-                'model_info': model_info,
-                'runtime_status': {
-                    'learning_strategy_ai_trained': learning_strategy_ai.is_trained if learning_strategy_ai else False,
-                    'random_forest_attitude_trained': random_forest_model.is_trained if random_forest_model else False,
-                    'database_connected': db_manager is not None
-                }
-            },
-            'timestamp': datetime.now().isoformat()
-        })
+#         return jsonify({
+#             'success': True,
+#             'data': {
+#                 'model_info': model_info,
+#                 'runtime_status': {
+#                     'learning_strategy_ai_trained': learning_strategy_ai.is_trained if learning_strategy_ai else False,
+#                     'random_forest_attitude_trained': random_forest_model.is_trained if random_forest_model else False,
+#                     'database_connected': db_manager is not None
+#                 }
+#             },
+#             'timestamp': datetime.now().isoformat()
+#         })
         
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e),
-            'traceback': traceback.format_exc()
-        }), 500
+#     except Exception as e:
+#         return jsonify({
+#             'success': False,
+#             'error': str(e),
+#             'traceback': traceback.format_exc()
+#         }), 500
 
 @app.route('/api/models/retrain', methods=['POST'])
 def retrain_models():
@@ -399,7 +400,7 @@ if __name__ == '__main__':
         print("  POST /api/models/retrain        - Retrain all models")
         print("  POST /api/tracking/collect      - Collect tracking data")
         
-        app.run(debug=False, host='0.0.0.0', port=5000)
+        app.run(debug=True, host='0.0.0.0', port=5000)
     else:
         print("Failed to initialize models. Server not started.")
         sys.exit(1)

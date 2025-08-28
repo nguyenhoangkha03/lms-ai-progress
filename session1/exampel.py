@@ -74,6 +74,7 @@ class TestAnalyzer:
     def analyze_user_begining(self, db: DatabaseManager, questions):
         list_course = []
         course_stats = {}
+        # print(questions)
         
         # Initialize statistics
         total_questions = len(questions)
@@ -81,7 +82,6 @@ class TestAnalyzer:
         difficulty_stats = {'easy': {'correct': 0, 'total': 0}, 
                           'medium': {'correct': 0, 'total': 0}, 
                           'hard': {'correct': 0, 'total': 0}}
-        
         for q in questions:
             question_id = q.get('questionId')
             answer = q.get('answer')
@@ -121,7 +121,7 @@ class TestAnalyzer:
                 
                 course_stats[course_id]['total_questions'] += 1
                 
-             
+                print("xem thử:", course_data)
                 if answer == False:
                     course_stats[course_id]['wrong_answers'] += 1
                     
@@ -186,8 +186,9 @@ class TestAnalyzer:
         lesson_recommendations = []
         
         for course in learning_path:
-            if course.get('wrong_answers', 0) > 0: 
             
+            if course.get('wrong_answers', 0) > 0: 
+
                 accuracy_correct = max(0, (course.get('total_questions', 1) - course.get('wrong_answers', 0))) / course.get('total_questions', 1) * 100
                 weak_categories.append({
                     'course_name': course.get('course_title'), 
