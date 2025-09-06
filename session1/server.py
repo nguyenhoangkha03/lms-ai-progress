@@ -179,7 +179,7 @@ def recommend_lessons():
         recommendations = content_recommender.recommend_lessons(db_manager, strategy, analysis)
         # print("Con cá con:", recommendations)
         """
-        Dữ liệu nhận về dạng: {"user_id": "user-student-01", "assessment_attemp_id": "att-01"}
+        Dữ liệu nhận về dạng: { "data" : {"user_id": "user-student-01", "assessment_attemp_id": "att-01"} }
         Kết quả trả về:
         Tổng tỉ lệ đúng,
         Tên khóa học,
@@ -236,6 +236,8 @@ def predict_learning_attitude():
         attitude_result = random_forest_model.predict_attitude(analytics_data, return_proba=True)
         
         """
+        Dữ nhận nhận về: { "data" : {"user_id": "user-student-01"} }
+        Kết quả trả về:
         Độ tin cậy,
         Thái độ học được dự đoán,
         Lí do
