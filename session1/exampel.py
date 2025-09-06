@@ -2135,34 +2135,34 @@ class AITrackingDataCollector:
             'course_id': course_id,
             'collected_at': datetime.now().isoformat(),
             
-            # 1. BASIC PROGRESS DATA
+            
             'basic_progress': self._get_basic_progress(user_id, course_id),
             
-            # 2. LEARNING ACTIVITIES - Dữ liệu hành vi chi tiết
+            
             'learning_activities': self._get_learning_activities(user_id, course_id),
             
-            # 3. LEARNING SESSIONS - Phiên học tập
+       
             # 'learning_sessions': self._get_learning_sessions(user_id),
             
-            # 4. ASSESSMENT PERFORMANCE - Kết quả kiểm tra
+           
             'assessment_performance': self._get_assessment_performance(user_id, course_id),
             
-            # 5. TIME PATTERNS - Mô hình thời gian học
+           
             # 'time_patterns': self._get_time_patterns(user_id),
             
-            # 6. ENGAGEMENT METRICS - Chỉ số tương tác
+          
             # 'engagement_metrics': self._get_engagement_metrics(user_id, course_id),
             
-            # 7. LEARNING STYLE - Phong cách học tập
+         
             # 'learning_style': self._get_learning_style(user_id),
             
-            # 8. CONTENT INTERACTION - Tương tác với nội dung
+            
             'content_interaction': self._get_content_interaction(user_id, course_id),
             
-            # 9. SOCIAL INTERACTION - Tương tác xã hội
+           
             # 'social_interaction': self._get_social_interaction(user_id),
             
-            # 10. HISTORICAL ANALYTICS - Dữ liệu phân tích lịch sử
+
             # 'historical_analytics': self._get_historical_analytics(user_id)
         }
         # print(data)
@@ -2186,9 +2186,6 @@ class AITrackingDataCollector:
         return self._analysis_activities(activities)
     
     def _get_assessment_performance(self, user_id, course_id):
-        """Thu thập và phân tích dữ liệu hiệu suất đánh giá của sinh viên"""
-        
-
         where_clause = f""" 
         JOIN assessments a ON ast.assessmentId = a.id 
         LEFT JOIN lessons ls ON a.lessonId = ls.id
@@ -2208,7 +2205,6 @@ class AITrackingDataCollector:
     
     
     def _get_content_interaction(self, user_id, course_id):
-        """Thu thập và phân tích dữ liệu tương tác với nội dung của sinh viên"""
         
         interaction_data = {
             'lesson_progress': self._get_lesson_interactions(user_id, course_id),
@@ -2473,7 +2469,6 @@ class AITrackingDataCollector:
         }
     
     def _analyze_completion_patterns(self, df):
-        """Phân tích mô hình hoàn thành"""
         completion_activities = df[df['activityType'].str.contains('complete', case=False, na=False)]
         start_activities = df[df['activityType'].str.contains('start', case=False, na=False)]
         
@@ -2488,7 +2483,6 @@ class AITrackingDataCollector:
         }
     
     def _analyze_content_interaction(self, df):
-        """Phân tích tương tác với nội dung"""
         interactive_activities = df[df['activityType'].isin([
             'discussion_post', 'chat_message', 'note_create', 
             'bookmark_add', 'help_request', 'forum_post'
@@ -2501,17 +2495,6 @@ class AITrackingDataCollector:
     
     
     def _analyze_assessment_performance(self, attempts, user_id, course_id):
-        """
-        Phân tích hiệu suất đánh giá chi tiết
-        
-        Args:
-            attempts: Danh sách các lần thử assessment
-            user_id: ID sinh viên
-            course_id: ID khóa học
-            
-        Returns:
-            dict: Kết quả phân tích hiệu suất đánh giá
-        """
         if not attempts:
             return {
                 'total_assessments': 0,
@@ -3546,46 +3529,12 @@ class AITRACKING:
                 'tăng': round(trend_proba[2],2)
             }
         }
-    
-    # def save_model(self,pathsave = './models/' ,filename='aitrack_model.joblib'):
-    #     """Lưu model đã huấn luyện"""
-        
-    #     model_data = {
-    #         'trend_model': self.trend_model if hasattr(self, 'trend_model') else None,
-    #         'score_model': self.score_model if hasattr(self, 'score_model') else None,
-    #         'performance_scaler': self.performance_scaler if hasattr(self, 'performance_scaler') else None,
-    #         'model_type': 'AITracking'
-    #     }
-    #     filepath = os.path.join(pathsave, f"{filename}")
-    #     os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
-    #     joblib.dump(model_data, filepath)
-    #     print(f"✅ Đã lưu model vào {filepath}")
-    
-    # def load_model(self, filename='aitrack_model.joblib'):
-    #     """Tải model đã huấn luyện"""
-    #     import joblib
-        
-    #     try:
-    #         model_data = joblib.load(filename)
-    #         self.trend_model = model_data.get('trend_model')
-    #         self.score_model = model_data.get('score_model')
-    #         self.performance_scaler = model_data.get('performance_scaler')
-    #         print(f"✅ Đã tải model từ {filename}")
-    #         return True
-    #     except Exception as e:
-    #         print(f"❌ Lỗi khi tải model: {e}")
-    #         return False
-    
-    
     def save_model(self, pathsave: str = "./models", filename: str = "aitrack_model.joblib") -> str:
         """
         Lưu trạng thái model (chỉ lưu phần cần thiết) vào <pathsave>/<filename>.
         Trả về đường dẫn file đã lưu.
         """
-        # đảm bảo pathsave là thư mục
         os.makedirs(pathsave, exist_ok=True)
-
-        # nếu caller truyền full path trong filename, tôn trọng luôn
         if os.path.isabs(filename) or os.path.dirname(filename):
             filepath = filename if os.path.isabs(filename) else os.path.join(pathsave, filename)
         else:
@@ -3608,12 +3557,7 @@ class AITRACKING:
             raise
 
     def load_model(self, filename_or_path: str = "aitrack_model.joblib", models_dir: str = "./models"):
-        """
-        Tải model. Tham số đầu có thể là:
-         - full path tới file joblib,
-         - hoặc tên file như 'aitrack_model.joblib',
-         - hoặc tên base như 'aitrack' (hàm sẽ thử nhiều biến thể trong models_dir).
-        """
+    
   
         if os.path.isabs(filename_or_path) or os.path.dirname(filename_or_path):
             candidate = filename_or_path
@@ -3636,7 +3580,6 @@ class AITRACKING:
                     if filename_or_path.lower() in fname.lower() and fname.lower().endswith(".joblib"):
                         candidates.append(os.path.join(models_dir, fname))
 
-            # chọn cái tồn tại đầu tiên
             found = None
             for p in candidates:
                 if os.path.isfile(p):
@@ -3646,17 +3589,16 @@ class AITRACKING:
                 raise FileNotFoundError(f"File không tồn tại: {candidate} . Kiểm tra tên file trong {models_dir}")
             candidate = found
 
-        # bây giờ candidate là file hiện hữu
+      
         try:
             model_data = joblib.load(candidate)
         except Exception as e:
             raise IOError(f"Lỗi khi joblib.load('{candidate}'): {e}")
 
-        # kiểm tra kiểu dữ liệu
         if not isinstance(model_data, dict):
             raise TypeError(f"Dữ liệu trong {candidate} không phải dict. Loại: {type(model_data)}")
 
-        # optional: kiểm tra model_type để tránh load nhầm file
+
         model_type = model_data.get('model_type')
         if model_type and model_type != 'AITracking':
             print(f"⚠️ Cảnh báo: file {candidate} có model_type={model_type}, không phải 'AITracking'")

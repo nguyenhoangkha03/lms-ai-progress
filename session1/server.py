@@ -119,21 +119,21 @@ def recommend():
         Dữ liệu nhận về dạng : {"data": [{"questionId": "q-html-1", "answer": false}]}
 
         Kết quả trả về:
-        % đúng của một khóa học,
-        % đúng dạng hệ số 10,
-        id khóa học,
-        tên khóa học,
-        dạng mô hình dự đoán (chỉ để phân biệt với mô hình dự đoán kiểm tra),
-        số thứ tự gợi ý,
-        cấp độ ưu tiên,
-        chỉ số ưu tiên,
-        tổng số câu sai,
-        % câu sai dạng hệ số 10
+        % đúng của một khóa học (accuracy_percentage),
+        % đúng dạng hệ số 10 (correct_total_ratio),
+        id khóa học (course_id),
+        tên khóa học (course_level),
+        số thứ tự gợi ý (course_title),
+        cấp độ ưu tiên (order_index),
+        cấp ưu tiên (priority_rank),
+        số ưu tiên (priority_score),
+        số câu dễ sai (wrong_easy_questions),
+        % câu sai dạng hệ số 10 (wrong_total_ratio),
         
-        Gợi ý phương án học
-        độ tin cậy
-        tổng số gợi ý
-        thời gian gợi ý
+        Gợi ý phương án học (strategy),
+        độ tin cậy (strategy_confidence)
+        tổng số gợi ý (total_recommendations)
+        thời gian đưa ra gợi ý (timestamp)
         """
         
         return jsonify({
@@ -181,23 +181,23 @@ def recommend_lessons():
         """
         Dữ liệu nhận về dạng: { "data" : {"user_id": "user-student-01", "assessment_attemp_id": "att-01"} }
         Kết quả trả về:
-        Tổng tỉ lệ đúng,
-        Tên khóa học,
-        Độ khó,
-        Tỉ lệ phần trăm đúng của bài học,
-        Số câu đúng trong bài học / Tổng câu hỏi trong bài học đó,
-        Id bài học,
-        Đường dẫn bài học,
-        Tiêu đề bài học,
-        Số câu sai trong bài học / Tổng câu hỏi trong bài học đó,
-        Thứ tự ưu tiên,
-        Rank ưu tiên,
-        Số ưu tiên,
-        Danh sách các câu hỏi sai,
-        Comment câu sai,
-        Độ ưu tiên dự đoán,
-        Độ tin cậy,
-        Tổng số gợi ý.
+        Tổng tỉ lệ đúng (accuracy_correct),
+        Tên khóa học (course_title),
+        Độ khó (difficulty_affected),
+        Tỉ lệ phần trăm đúng của bài học (lesson_accuracy_percentage),
+        Số câu đúng trong bài học / Tổng câu hỏi trong bài học đó (lesson_correct_total_ratio),
+        Id bài học (lesson_id),
+        Đường dẫn bài học (lesson_slug),
+        Tiêu đề bài học (lesson_title),
+        Số câu sai trong bài học / Tổng câu hỏi trong bài học đó (lesson_wrong_total_ratio),
+        Thứ tự ưu tiên (order_index),
+        Rank ưu tiên (priority_rank),
+        Số ưu tiên (priority_score),
+        Danh sách các câu hỏi sai (questions_wrong),
+        Comment câu sai (reason),
+        Kế hoạc dự đoán (strategy),
+        Độ tin cậy (strategy_confidence),
+        Tổng số gợi ý (total_recommendations).
         """
         
         return jsonify({
@@ -238,9 +238,9 @@ def predict_learning_attitude():
         """
         Dữ nhận nhận về: { "data" : {"user_id": "user-student-01"} }
         Kết quả trả về:
-        Độ tin cậy,
-        Thái độ học được dự đoán,
-        Lí do
+        Độ tin cậy (confidence),
+        Thái độ học được dự đoán (predicted_attitude),
+        Lí do (reason)
         
         """
         
@@ -290,8 +290,9 @@ def aitrack():
         """
         Dữ liệu nhận về: {"data": {"user_id": "user-student-01", "course_id": "course-html-css"}}
         Kết quả trả về:
-        Điểm số dự đoán,
-        Xu hướng điểm số,
+        Đánh giá (performance_level),
+        Điểm số dự đoán (predicted_score),
+        Xu hướng điểm số (trend_prediction),
         """
         
     except Exception as e:
