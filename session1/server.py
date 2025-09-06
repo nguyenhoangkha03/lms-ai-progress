@@ -23,11 +23,12 @@ content_recommender = None
 learning_assessment = None  
 random_forest_model = None
 ai_tracking_collector = None
+ai_tracking = None
 
 def initialize_models():
     """Khởi tạo tất cả models và database connection"""
     global db_manager, test_analyzer, learning_strategy_ai, content_recommender
-    global learning_assessment, random_forest_model, ai_tracking_collector
+    global learning_assessment, random_forest_model, ai_tracking_collector,ai_tracking
     
     try:
    
@@ -45,6 +46,7 @@ def initialize_models():
         random_forest_model = RandomForestLearninAttube()
         ai_tracking_collector = AITrackingDataCollector(db_manager)
         ai_tracking = AITRACKING(db_manager)
+        # print(ai_tracking)
         model_list = [ai_tracking, random_forest_model, learning_strategy_ai]
         
         try:
@@ -98,6 +100,7 @@ def recommend():
     try:
         data = request.get_json()
         questions = data.get('data')
+        # print("Xem", questions)
         
         if not questions:
             return jsonify({'error': 'thiếu danh sách câu hỏi'}), 400
@@ -112,7 +115,26 @@ def recommend():
         # Predict strategy
         strategy, confidence, additional_info = learning_strategy_ai.predict_strategy(features)
         recommendations = content_recommender.recommend_lessons(db_manager, strategy, analysis_begin)
-        # print("Con cá con:", analysis_begin)
+        """
+        Dữ liệu nhận về dạng : {"data": [{"questionId": "q-html-1", "answer": false}]}
+
+        Kết quả trả về:
+        % đúng của một khóa học,
+        % đúng dạng hệ số 10,
+        id khóa học,
+        tên khóa học,
+        dạng mô hình dự đoán (chỉ để phân biệt với mô hình dự đoán kiểm tra),
+        số thứ tự gợi ý,
+        cấp độ ưu tiên,
+        chỉ số ưu tiên,
+        tổng số câu sai,
+        % câu sai dạng hệ số 10
+        
+        Gợi ý phương án học
+        độ tin cậy
+        tổng số gợi ý
+        thời gian gợi ý
+        """
         
         return jsonify({
             'success': True,
@@ -136,7 +158,8 @@ def recommend():
 def recommend_lessons():
     """Đề xuất lessons cho user"""
     try:
-        data = request.get_json()
+        request_user = request.get_json()
+        data = request_user.get('data')
         user_id = data.get('user_id')
         assessment_attemp_id = data.get('assessment_attemp_id')
         
@@ -145,7 +168,7 @@ def recommend_lessons():
             
 
         analysis = test_analyzer.analyze_user_performance(db_manager, user_id, assessment_attemp_id)
-   
+        # print(analysis)
         features = learning_strategy_ai.extract_features(analysis)
         
         # Predict strategy
@@ -154,7 +177,28 @@ def recommend_lessons():
         
     
         recommendations = content_recommender.recommend_lessons(db_manager, strategy, analysis)
-        # print("Con cá con:", analysis_begin)
+        # print("Con cá con:", recommendations)
+        """
+        Dữ liệu nhận về dạng: {"user_id": "user-student-01", "assessment_attemp_id": "att-01"}
+        Kết quả trả về:
+        Tổng tỉ lệ đúng,
+        Tên khóa học,
+        Độ khó,
+        Tỉ lệ phần trăm đúng của bài học,
+        Số câu đúng trong bài học / Tổng câu hỏi trong bài học đó,
+        Id bài học,
+        Đường dẫn bài học,
+        Tiêu đề bài học,
+        Số câu sai trong bài học / Tổng câu hỏi trong bài học đó,
+        Thứ tự ưu tiên,
+        Rank ưu tiên,
+        Số ưu tiên,
+        Danh sách các câu hỏi sai,
+        Comment câu sai,
+        Độ ưu tiên dự đoán,
+        Độ tin cậy,
+        Tổng số gợi ý.
+        """
         
         return jsonify({
             'success': True,
@@ -178,7 +222,8 @@ def recommend_lessons():
 def predict_learning_attitude():
     """Dự đoán learning attitude của user"""
     try:
-        data = request.get_json()
+        request_user = request.get_json()
+        data = request_user.get('data')
         user_id = data.get('user_id')
         
         if not user_id:
@@ -189,6 +234,13 @@ def predict_learning_attitude():
         
        
         attitude_result = random_forest_model.predict_attitude(analytics_data, return_proba=True)
+        
+        """
+        Độ tin cậy,
+        Thái độ học được dự đoán,
+        Lí do
+        
+        """
         
         return jsonify({
             'success': True,
@@ -208,54 +260,37 @@ def predict_learning_attitude():
             'traceback': traceback.format_exc()
         }), 500
         
-@app.route('/api/comprehensive-analysis', methods=['POST'])
-def comprehensive_analysis():
+@app.route('/api/aitrack', methods = ['POST'])
+def aitrack():
     try:
-        data = request.get_json()
+        request_user = request.get_json()
+        data = request_user.get('data')
         user_id = data.get('user_id')
-        assessment_id = data.get('assessment_id')
-        lesson_id = data.get('lesson_id', 'lesson-html-tags')
+        course_id = data.get('course_id')
         
-        if not user_id or not assessment_id:
-            return jsonify({'error': 'user_id và assessment_id là required'}), 400
-            
-        performance_analysis = test_analyzer.analyze_user_performance(db_manager, user_id, assessment_id)
-        
-      
-        features = learning_strategy_ai.extract_features(performance_analysis)
-        strategy, strategy_confidence, strategy_info = learning_strategy_ai.predict_strategy(features)
-        
-       
-        recommendations = content_recommender.recommend_lessons(db_manager, strategy, performance_analysis)
-        
-        
-        try:
-            analytics_data = learning_assessment.learning_analytics_data(user_id, lesson_id)
-            attitude_result = random_forest_model.predict(analytics_data, return_proba=True)
-        except Exception as e:
-            attitude_result = {
-                'attitude': 'Unknown',
-                'confidence': 0.0,
-                'error': str(e)
-            }
+        compre_data = ai_tracking_collector.collect_comprehensive_data(user_id, course_id)
+        extract_data = ai_tracking.extract_features_aitrack(compre_data)
+        predict = ai_tracking.predict_performance(extract_data)
         
         return jsonify({
             'success': True,
             'data': {
                 'user_id': user_id,
-                'assessment_id': assessment_id,
-                'lesson_id': lesson_id,
-                'performance_analysis': performance_analysis,
-                'strategy_prediction': {
-                    'strategy': strategy,
-                    'confidence': strategy_confidence,
-                    'additional_info': strategy_info
-                },
-                'lesson_recommendations': recommendations,
-                'attitude_prediction': attitude_result
+                'performance_level': predict.get('performance_level'),
+                'predicted_score': predict.get('predicted_score'),
+                'trend_prediction' : predict.get('trend_prediction')
             },
             'timestamp': datetime.now().isoformat()
+            
         })
+        
+        
+        """
+        Dữ liệu nhận về: {"data": {"user_id": "user-student-01", "course_id": "course-html-css"}}
+        Kết quả trả về:
+        Điểm số dự đoán,
+        Xu hướng điểm số,
+        """
         
     except Exception as e:
         return jsonify({
@@ -263,6 +298,62 @@ def comprehensive_analysis():
             'error': str(e),
             'traceback': traceback.format_exc()
         }), 500
+        
+# @app.route('/api/comprehensive-analysis', methods=['POST'])
+# def comprehensive_analysis():
+#     try:
+#         data = request.get_json()
+#         user_id = data.get('user_id')
+#         assessment_id = data.get('assessment_id')
+#         lesson_id = data.get('lesson_id', 'lesson-html-tags')
+        
+#         if not user_id or not assessment_id:
+#             return jsonify({'error': 'user_id và assessment_id là required'}), 400
+            
+#         performance_analysis = test_analyzer.analyze_user_performance(db_manager, user_id, assessment_id)
+        
+      
+#         features = learning_strategy_ai.extract_features(performance_analysis)
+#         strategy, strategy_confidence, strategy_info = learning_strategy_ai.predict_strategy(features)
+        
+       
+#         recommendations = content_recommender.recommend_lessons(db_manager, strategy, performance_analysis)
+        
+        
+#         try:
+#             analytics_data = learning_assessment.learning_analytics_data(user_id, lesson_id)
+#             attitude_result = random_forest_model.predict(analytics_data, return_proba=True)
+#         except Exception as e:
+#             attitude_result = {
+#                 'attitude': 'Unknown',
+#                 'confidence': 0.0,
+#                 'error': str(e)
+#             }
+        
+#         return jsonify({
+#             'success': True,
+#             'data': {
+#                 'user_id': user_id,
+#                 'assessment_id': assessment_id,
+#                 'lesson_id': lesson_id,
+#                 'performance_analysis': performance_analysis,
+#                 'strategy_prediction': {
+#                     'strategy': strategy,
+#                     'confidence': strategy_confidence,
+#                     'additional_info': strategy_info
+#                 },
+#                 'lesson_recommendations': recommendations,
+#                 'attitude_prediction': attitude_result
+#             },
+#             'timestamp': datetime.now().isoformat()
+#         })
+        
+#     except Exception as e:
+#         return jsonify({
+#             'success': False,
+#             'error': str(e),
+#             'traceback': traceback.format_exc()
+#         }), 500
 
 # @app.route('/api/models/info', methods=['GET'])
 # def get_models_info():
@@ -323,32 +414,6 @@ def retrain_models():
             'traceback': traceback.format_exc()
         }), 500
 
-@app.route('/api/tracking/collect', methods=['POST'])
-def collect_tracking_data():
-    """Thu thập dữ liệu AI tracking cho user"""
-    try:
-        data = request.get_json()
-        user_id = data.get('user_id')
-        course_id = data.get('course_id')
-        
-        if not user_id:
-            return jsonify({'error': 'user_id là required'}), 400
-            
-        # Collect comprehensive tracking data
-        tracking_data = ai_tracking_collector.collect_comprehensive_data(user_id, course_id)
-        
-        return jsonify({
-            'success': True,
-            'data': tracking_data,
-            'timestamp': datetime.now().isoformat()
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e),
-            'traceback': traceback.format_exc()
-        }), 500
 
 @app.errorhandler(404)
 def not_found(error):
@@ -385,13 +450,12 @@ if __name__ == '__main__':
         print("Server starting on http://localhost:5000")
         print("\nAvailable endpoints:")
         print("  GET  /health                    - Health check")
-        print("  POST /api/recommend     - Get lesson recommendations")
-        print("  POST /api/recommend-lessons     - Get lesson recommendations")
+        print("  POST /api/recommend     - Get lesson recommendations beginning")
+        print("  POST /api/recommend-lessons     - Get lesson recommendations assetment")
         print("  POST /api/predict-attitude      - Predict learning attitude")
-        print("  POST /api/comprehensive-analysis - Complete analysis")
-        print("  GET  /api/models/info           - Get models information")
+        # print("  POST /api/comprehensive-analysis - Complete analysis")
         print("  POST /api/models/retrain        - Retrain all models")
-        print("  POST /api/tracking/collect      - Collect tracking data")
+        print("  POST /api/aitrack      - Collect tracking data")
         
         app.run(debug=True, host='0.0.0.0', port=5000)
     else:

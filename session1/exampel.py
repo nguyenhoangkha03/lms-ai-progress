@@ -220,14 +220,14 @@ class TestAnalyzer:
             'total_courses_to_study': len(learning_path),
             'recommended_start': learning_path[0]['course_title'] if learning_path else None,
             
-          
             'has_data': total_questions > 0,
             'overall_accuracy': overall_accuracy,
             'total_questions': total_questions,
             'total_time': 0,  
             'difficulty_performance': difficulty_performance,
             'weak_categories': weak_categories,
-            'strategy_criteria': self._determine_strategy_criteria(overall_accuracy, difficulty_performance, len(weak_categories))
+            'strategy_criteria': self._determine_strategy_criteria(overall_accuracy, difficulty_performance, len(weak_categories)),
+            'data_source': 'analyze_user_begining'
         }
     
     def _determine_strategy_criteria(self, overall_accuracy, difficulty_performance, weak_count):
@@ -354,7 +354,7 @@ class TestAnalyzer:
             JOIN lessons ls ON ls.id = qs.lessonId
             WHERE qs.assessmentId = '{a['assessmentId']}'
             """
-            questions_raw = db.select("questions qs", "qs.*,qs.id AS question_id, ls.id, ls.content AS lesson_title, ls.slug AS lesson_slug", where_clause_qs)
+            questions_raw = db.select("questions qs", "qs.*,qs.id AS question_id, ls.id, ls.title AS lesson_title, ls.slug AS lesson_slug", where_clause_qs)
             for row in questions_raw:
                 questions[row['question_id']] = {
                     'question_title': row['questionText'],
@@ -397,9 +397,8 @@ class TestAnalyzer:
             course_title = attempt.get('course_title')
             category_name = attempt.get('name')
             total_math = 0
-            current_math = []
-            current_math.append(attempt.get('score'))
             math = 0
+            current_math = attempt.get('score') or 0
             total_math = attempt.get('maxScore')
 
             for qid, ans in student_answers.items():
@@ -439,7 +438,7 @@ class TestAnalyzer:
                     
                     
                 if is_correct:
-                    math = max(current_math)
+                    math += current_math
                 # print("Điểm thực", current_math)    
                 # print("Điểm",math)
                 # print("Tổng điểm", total_math)
@@ -516,11 +515,11 @@ class TestAnalyzer:
             # sorted_wrong = sorted(lesson_data['questions_wrong'], key=lambda x: x['orderIndex'])[:5]
             # lesson_data['questions_wrong'] = ' -> '.join([q['title'] for q in sorted_wrong])
 
-            # ✅ TÍNH ACCURACY CHO LESSON
             lesson_accuracy = round((correct_count / total_questions * 100), 2) if total_questions > 0 else 0
             priority = next((p for threshold, p in sorted(priority_map.items(), reverse=True) 
                             if error_count >= threshold), 'LOW')
-            # print(priority)
+            # print(error_count)
+            # print("here", priority)
             
             lesson_recommendations.append({
                 'lesson_id': lesson_data['lesson_id'],
@@ -557,18 +556,16 @@ class TestAnalyzer:
         else:
             difficulty_summary = pd.DataFrame()
 
-        # Process categories based on performance
+        
         total_accuracy = float(df_difficulty['is_correct'].mean()) if not df_difficulty.empty else 0
-        # print(total_accuracy)
+        # print("Check", total_accuracy)
         for idx, row in assessment_attempt.iterrows():
+            # print(len(assessment_attempt))
             
             cat_name = row["name"]
             course_name = row["course_title"]
-            if total_math:
-                score_mean = (math/total_math) * 100
-                # print(score_mean)
-            else:
-                continue
+            # print("Lí do đặc biệt", math)
+            # print("Lí do đặc biệt", total_math)
             # max_score = total_math
             # print(max_score)
             # print(score)
@@ -579,6 +576,7 @@ class TestAnalyzer:
             # print(row_category)
             
             for difficulty, row_difficulty in difficulty_summary.iterrows():
+                # print("Here", score_mean)
                 if total_accuracy < 100:
                     category_data = {
                         'id_user': user_id,
@@ -590,12 +588,13 @@ class TestAnalyzer:
                         'difficulty_question': difficulty,
                         'priority': 'high' if math <= 4.0 else 'medium' if math < 9 else None
                     }
-                    
-                    if score_mean <= 50:
+                    # print("Lí do", row_difficulty['accuracy'])
+                    if row_difficulty['accuracy'] <= 50:
                         weak_categories.append(category_data)
-                    elif 50 < score_mean < 100:
+                        # print(weak_categories)
+                    elif 50 < row_difficulty['accuracy'] < 100:
                         avd_categories.append(category_data)
-                        # print(category_data)
+                        # print("avd",category_data)
                         
             
 
@@ -641,7 +640,8 @@ class TestAnalyzer:
             'difficulty_performance': difficulty_performance,
             'weak_categories': weak_categories,
             'avd_categories': avd_categories,
-            'lesson_recommendations': lesson_recommendations  
+            'lesson_recommendations': lesson_recommendations,
+            'data_source': 'analyze_user_performance'
         }
         # print(df_difficulty['is_correct'])
         # print("check:", analysis)
@@ -652,7 +652,7 @@ class TestAnalyzer:
         
         
         
-class LearningStrategyAI:
+class LearningStrategyAI:   
     """AI model để quyết định chiến lược học tập"""
     
     STRATEGIES = {
@@ -664,15 +664,6 @@ class LearningStrategyAI:
     }
     
     def __init__(self):
-        self.model = RandomForestClassifier(
-            n_estimators=200,        # Tăng từ 100
-            max_depth=10,            # Tăng từ 8
-            min_samples_split=3,     # Giảm từ 5
-            min_samples_leaf=2,      # Thêm
-            class_weight='balanced', # Thêm để handle imbalanced data
-            random_state=42,
-            n_jobs=-1               # Parallel processing
-        )
         self.scaler = StandardScaler()
         self.is_trained = False
         self.db = DatabaseManager()
@@ -698,10 +689,10 @@ class LearningStrategyAI:
        
         features.extend([
             performance_data.get('overall_accuracy'),
-            # performance_data.get('overall_accuracy_percent', 0) / 100,  # [0,1]
-            performance_data.get('total_questions', 0),          # [0,1]
-            0.0,  # hint_usage_rate - không có trong data, dùng default
-            performance_data.get('total_time', 0) / 120               # [0,1]
+        
+            performance_data.get('total_questions', 0),
+            0.0,  
+            performance_data.get('total_time', 0) / 120
         ])
         
         # 2. Difficulty-based performance (3 features) - SỬA LỖI
@@ -804,7 +795,7 @@ class LearningStrategyAI:
                 #     y_train.append(4)
                     
                     
-                # Cải thiện logic phân loại strategy dựa trên nhiều features
+
                 accuracy = features[0]
                 total_questions = features[1] 
                 hint_usage = features[2]
@@ -909,9 +900,6 @@ class LearningStrategyAI:
     
     def _determine_strategy_id(self, accuracy, total_questions, hint_usage, time_spent,
                               easy_acc, medium_acc, hard_acc, weak_categories):
-        """
-        Xác định strategy ID dựa trên logic phức tạp xét nhiều yếu tố
-        """
         
         if (accuracy < 0.3 or 
             (accuracy < 0.5 and easy_acc < 0.6) or
@@ -1180,23 +1168,24 @@ class ContentRecommender:
         
         # Kiểm tra loại data input
         # print("O", user_performance)
-        data_source = self._detect_data_source(user_performance)
+        data_source = user_performance.get('data_source')
         # print(f"🔍 Detected data source: {data_source}")
         
         recommendations = []
         
-        # Xử lý dựa trên data source  
+       
         if data_source == 'analyze_user_begining':
             recommendations = self._process_begining_analysis(user_performance, strategy)
         elif data_source == 'analyze_user_performance':
             recommendations = self._process_performance_analysis(user_performance, strategy)
-        elif data_source == 'ai_prediction_result':
-            recommendations = self._process_ai_prediction(user_performance, strategy)
+        # elif data_source == 'ai_prediction_result':
+        #     recommendations = self._process_ai_prediction(user_performance, strategy)
         else:
           
             recommendations = self._process_fallback_logic(db_manager, strategy, user_performance)
+            
+        # print("U", recommendations)
         
-        # Sắp xếp theo độ ưu tiên từ cao đến thấp
         sorted_recommendations = sorted(recommendations, key=lambda x: x.get('priority_score', 0), reverse=True)
         
         
@@ -1270,6 +1259,8 @@ class ContentRecommender:
 
         
         def try_append_recomment(lesson_data, data):
+            print("Chimdada",data)
+            print("OLSSS", lesson_data)
             lid = lesson_data.get('lesson_id') or lesson_data.get('lesson_slug')
             if not lid:
                 return
@@ -1277,8 +1268,8 @@ class ContentRecommender:
             if key in added_keys:
                 return
             
-            if as_number(lesson_data.get('lesson_accuracy', 0)) >= 90:
-                return
+            # if as_number(lesson_data.get('lesson_accuracy', 0)) >= 90:
+            #     return
             recomment_dict = {
                 'lesson_id': lid,
                 'title': f"Ôn tập {lesson_data.get('lesson_title')}",
@@ -1352,16 +1343,8 @@ class ContentRecommender:
         
         return min(priority, 1.0)
     
-    def _detect_data_source(self, user_performance):
-        """Phát hiện nguồn data"""
-        if 'prediction_method' in user_performance and 'feature_analysis' in user_performance:
-            return 'ai_prediction_result'
-        elif 'learning_path' in user_performance:
-            return 'analyze_user_begining'
-        elif 'lesson_id' in user_performance:
-            return 'analyze_user_performance'
-        else:
-            return 'unknown'
+
+        
     
     def _get_priority_rank(self, priority_score):
         """Chuyển priority score thành rank description"""
@@ -1425,7 +1408,6 @@ class ContentRecommender:
                 'course_id': course_id,
                 'course_level': level,
                 'wrong_easy_questions': course_data.get('wrong_easy_questions', 0),
-                'data_source': 'analyze_user_begining'
             }
             
             recommendations.append(recommendation)
@@ -1463,7 +1445,8 @@ class ContentRecommender:
         Format: Có lesson - course + lesson details
         """
         recommendations = []
-        weak_categories = user_performance.get('weak_categories', [])
+        weak_categories = user_performance.get('weak_categories', []) or user_performance.get('avd_categories', [])
+        # print("Checkkk", user_performance)
         lesson_recommendations = user_performance.get('lesson_recommendations', [])
         
         
@@ -1482,10 +1465,12 @@ class ContentRecommender:
               
                 priority_score = 5.0
                 
-               
+                # print("CHEEEEEEEEEEEEEEEEEEEEEEK", lesson)
                 if weak_cat.get('priority') == 'HIGH':
                     priority_score += 2.0
                 elif weak_cat.get('priority') == 'MEDIUM':
+                    priority_score += 1.5
+                elif weak_cat.get('priority') == 'LOW':
                     priority_score += 1.0
                 
                 
@@ -1510,11 +1495,11 @@ class ContentRecommender:
                     'lesson_accuracy_percentage': f"{lesson_accuracy:.1f}%",
                     'lesson_correct_total_ratio': f"{correct_answers}/{total_lesson_questions}",
                     'lesson_wrong_total_ratio': f"{error_count}/{total_lesson_questions}",
-                    
-                    
+                    'reason': lesson.get('reason'),
+                    'questions_wrong': lesson.get('questions_wrong'),
                     'lesson_id': lesson.get('lesson_id'),
                     'lesson_slug': lesson.get('lesson_slug'),
-                    'category_accuracy': weak_cat.get('accuracy_correct', 0),
+                    'accuracy_correct': weak_cat.get('accuracy_correct', 0),
                     'difficulty_affected': lesson.get('difficulties_affected', []),
                     'data_source': 'analyze_user_performance'
                 }
@@ -1746,15 +1731,6 @@ class RandomForestLearninAttube:
     }
     
     def __init__(self):
-        self.model = RandomForestClassifier(
-            n_estimators=100,
-            max_depth=8,
-            min_samples_split=5,
-            min_samples_leaf=2,
-            class_weight='balanced',
-            random_state=42,
-            n_jobs=-1
-        )
         self.scaler = StandardScaler()
         self.is_trained = False
         self.db = DatabaseManager()
@@ -2389,10 +2365,10 @@ class AITrackingDataCollector:
         # print("Here", video_activities)
         focus_analysis = self._analyze_focus_patterns(video_activities)
         
-        # Phân tích mô hình hoàn thành
+      
         completion_analysis = self._analyze_completion_patterns(df)
         
-        # Phân tích tương tác với nội dung
+       
         interaction_analysis = self._analyze_content_interaction(df)
         
         return {
@@ -2678,7 +2654,7 @@ class AITrackingDataCollector:
             )
             
             if questions:
-                student_answers = json.loads(attempt.get('answers', '{}')) if attempt.get('answers') else {}
+                # student_answers = json.loads(attempt.get('answers', '{}')) if attempt.get('answers') else {}
                 
                 for question in questions:
                     difficulty = question['difficulty']
@@ -2716,7 +2692,7 @@ class AITrackingDataCollector:
         
         avg_time = time_data['timeTaken'].mean()
         
-        # Phân tích hiệu suất thời gian
+        
         time_efficiency = {}
         
         # Nhóm theo thời gian (nhanh, trung bình, chậm)
@@ -2786,10 +2762,9 @@ class AITrackingDataCollector:
         if len(df) < 2:
             return {'pattern': 'insufficient_data'}
         
-        # Sắp xếp theo thời gian
+
         df_sorted = df.sort_values('submittedAt')
         
-        # Tính sự thay đổi giữa các lần thử
         improvements = []
         for i in range(1, len(df_sorted)):
             prev_score = df_sorted.iloc[i-1]['percentage']
@@ -2818,7 +2793,7 @@ class AITrackingDataCollector:
         return {
             'pattern': pattern,
             'average_improvement': round(avg_improvement, 2),
-            'consistency_score': round(100 - consistency, 2),  # Càng cao càng nhất quán
+            'consistency_score': round(100 - consistency, 2), 
             'total_improvement': round(improvements[-1] if improvements else 0, 2)
         }
     
@@ -2901,17 +2876,7 @@ class AITrackingDataCollector:
         return {'notes': notes}
     
     def _analyze_comprehensive_content_interaction(self, interaction_data, user_id, course_id):
-        """
-        Phân tích chi tiết tương tác với nội dung
-        
-        Args:
-            interaction_data: Dict chứa tất cả dữ liệu tương tác
-            user_id: ID sinh viên
-            course_id: ID khóa học
-            
-        Returns:
-            dict: Kết quả phân tích tương tác với nội dung
-        """
+    
         
         # 1. Phân tích tiến độ bài học
         lesson_analysis = self._analyze_lesson_progress(interaction_data['lesson_progress'])
@@ -3413,6 +3378,7 @@ class AITRACKING:
             studentId = student['id']
             courseId = student['courseId']
             data = self.data.collect_comprehensive_data(studentId, courseId)
+            # print(data)
             features = self.extract_features_aitrack(data)
             
             if features is not None and len(features) > 0:
@@ -3420,6 +3386,7 @@ class AITRACKING:
                 
                
                 engagement_score = data.get('content_interaction', {}).get('overall_engagement_score', {}).get('overall_score', 0)
+        
                 focus_score = data.get('learning_activities', {}).get('learning_behavior', {}).get('focus_patterns', {}).get('focus_score', 50)
                 
                 
@@ -3534,6 +3501,8 @@ class AITRACKING:
                 'score_confidence': 0.0,
                 'performance_level': 'unknown'
             }
+            
+        # print(features)
         
         features_scaled = self.performance_scaler.transform([features])
         
@@ -3556,11 +3525,11 @@ class AITRACKING:
         score_confidence = round(max(0, 1 - (score_std / 50)),2)
         
        
-        if predicted_score >= 85:
+        if predicted_score >= 8.5:
             performance_level = 'excellent'
-        elif predicted_score >= 70:
+        elif predicted_score >= 7.0:
             performance_level = 'good'
-        elif predicted_score >= 50:
+        elif predicted_score >= 5.0:
             performance_level = 'average'
         else:
             performance_level = 'needs_improvement'
@@ -3568,7 +3537,7 @@ class AITRACKING:
         return {
             'trend_prediction': trend_prediction,
             'trend_confidence': trend_confidence,
-            'predicted_score': predicted_score,
+            'predicted_score': round(predicted_score, 2),
             'score_confidence': score_confidence,
             'performance_level': performance_level,
             'trend_probabilities': {
@@ -3847,26 +3816,23 @@ if __name__ == "__main__":
     if conn:
       
         analyzer = TestAnalyzer()
-        analysis = analyzer.analyze_user_performance(db_manager, "user-student-12", "att-gu-12")
+        analysis = analyzer.analyze_user_performance(db_manager, "user-student-01", "att-01")
         # analysis_begining = analyzer.analyze_user_begining(db_manager)
         Ai = LearningStrategyAI()
         cm = ContentRecommender()
-        # test = Ai.extract_features(analysis)
-        # trls = Ai.train_model()
-        # # print(f"🔍 test features: {test}")
-        # # print("🔍 Calling predict_strategy...")
-        # result = Ai.predict_strategy(test)
+        test = Ai.extract_features(analysis)
+        trls = Ai.train_model()
+        result = Ai.predict_strategy(test)
         # Ai.save_model()
-        # # print(f"🔍 Raw result: {result}")
-        # # print(f"🔍 Type of result: {type(result)}")
 
-        # strategy, confidence, sdf = result
-        # recomment = cm.recommend_lessons(db_manager, strategy, analysis)
+
+        strategy, confidence, sdf = result
+        recomment = cm.recommend_lessons(db_manager, strategy, analysis)
         # # Test AITRACKING model
         # pretrack = AITrackingDataCollector(db_manager) 
         # student_data = pretrack.collect_comprehensive_data("user-student-01", "course-html-css")
         
-        # # Khởi tạo AITRACKING model
+        # # # Khởi tạo AITRACKING model
         # aitrack_model = AITRACKING(db_manager)
         # t = aitrack_model.train_performance_model()
         # features = aitrack_model.extract_features_aitrack(student_data)
@@ -3892,19 +3858,19 @@ if __name__ == "__main__":
         # Lưu model
         # aitrack_model.save_model('demo_aitrack_model.pkl')
         # print("I'm Here ", testo)
-        learning = Learning_assessment(db_manager)
-        tesst = learning.learning_analytics_data("user-student-14")
-        rd = RandomForestLearninAttube()
-        t = rd.extract_features_lesson(tesst)
-        tr = rd.train()
-        r = rd.predict_attitude(tesst, return_proba = True)
-        rd.save_model()
+        # learning = Learning_assessment(db_manager)
+        # tesst = learning.learning_analytics_data("user-student-14")
+        # rd = RandomForestLearninAttube()
+        # t = rd.extract_features_lesson(tesst)
+        # tr = rd.train()
+        # r = rd.predict_attitude(tesst, return_proba = True)
+        # rd.save_model()
         # print("\n=== Prediction Result ===")
-        print(f"Predicted attitude: {r['attitude']}")
-        print(f"Confidence: {r['confidence']:.2%}")
-        print("\nProbabilities for each class:")
-        for attitude, prob in r['probabilities'].items():
-            print(f"  {attitude}: {prob:.2%}")
+        # print(f"Predicted attitude: {r['attitude']}")
+        # print(f"Confidence: {r['confidence']:.2%}")
+        # print("\nProbabilities for each class:")
+        # for attitude, prob in r['probabilities'].items():
+        #     print(f"  {attitude}: {prob:.2%}")
         
      
         
@@ -3913,26 +3879,26 @@ if __name__ == "__main__":
         # test = track.collect_comprehensive_data
         # cm = ContentRecommender(db_manager)
         # cm_def = cm.recommend_lessons()
-        # print("\n📊 KẾT QUẢ PHÂN TÍCH:")
-        # print("Has data:", analysis.get("has_data"))
-        # print("Total questions:", analysis.get("total_questions"))
-        # print("Total time:", analysis.get("total_time"), "s")
-        # print("Correct answers:", analysis.get("correct_answers"))
-        # print("Overall accuracy:", analysis.get("overall_accuracy_percent"), "%")
-        # print("Overall accuracy (decimal):", analysis.get("overall_accuracy"))
-        # print("Reason: ", result[2].get('reason') )
+        print("\n📊 KẾT QUẢ PHÂN TÍCH:")
+        print("Has data:", analysis.get("has_data"))
+        print("Total questions:", analysis.get("total_questions"))
+        print("Total time:", analysis.get("total_time"), "s")
+        print("Correct answers:", analysis.get("correct_answers"))
+        print("Overall accuracy:", analysis.get("overall_accuracy_percent"), "%")
+        print("Overall accuracy (decimal):", analysis.get("overall_accuracy"))
+        print("Reason: ", result[2].get('reason') )
 
-        # print("\n📈 Hiệu suất theo danh mục:")
-        # print(json.dumps(analysis.get("assessment_attempt_performance", {}), indent=2, ensure_ascii=False))
+        print("\n📈 Hiệu suất theo danh mục:")
+        print(json.dumps(analysis.get("assessment_attempt_performance", {}), indent=2, ensure_ascii=False))
 
-        # print("\n📉 Hiệu suất theo độ khó:")
-        # print(json.dumps(analysis.get("difficulty_performance", {}), indent=2, ensure_ascii=False))
+        print("\n📉 Hiệu suất theo độ khó:")
+        print(json.dumps(analysis.get("difficulty_performance", {}), indent=2, ensure_ascii=False))
 
-        # print("\n🚨 Danh mục yếu:")
-        # print(json.dumps(analysis.get("weak_categories", []), indent=2, ensure_ascii=False))
+        print("\n🚨 Danh mục yếu:")
+        print(json.dumps(analysis.get("weak_categories", []), indent=2, ensure_ascii=False))
 
-        # print("\n📚 Cơ hội cải thiện:")
-        # print(json.dumps(analysis.get("avd_categories", []), indent=2, ensure_ascii=False))
+        print("\n📚 Cơ hội cải thiện:")
+        print(json.dumps(analysis.get("avd_categories", []), indent=2, ensure_ascii=False))
         
            # ===== MODEL SAVE/LOAD DEMO =====
         # print("\n" + "="*60)
@@ -3971,26 +3937,27 @@ if __name__ == "__main__":
         # # print(recomment)
         # # print(f"🔍 analysis after assignment: {sdf}")
         # # # print(strategy)
-        # # print(recomment[0])
-        # if recomment:
-        #     for idx, lesson in enumerate(recomment, 1):
-        #         # print(lesson)
-        #         # print(lesson.get('lesson_id'))
-        #         print(f"\n{idx}. {lesson.get('title', 'N/A')}")
-        #         print(f"   📖  Khóa học: {lesson.get('course_title', 'N/A')}")
-        #         print(f"   🏷️  Danh mục: {lesson.get('category_name', 'N/A')}")
-        #         print(f"   ⭐  Độ ưu tiên: {lesson.get('priority_score', 0):.2f}")
-        #         print(f"   🤓  Độ khó: {lesson.get('difficulty')}")
-        #         print(f"   💡  Lý do: {lesson.get('recommendation_reason', 'N/A')}")
-        #         print(f"   💯  Tổng số câu hỏi của bài học: {lesson.get('total_question_lesson')}")
-        #         print(f"   🧠  Độ chính xác trong bài học: {lesson.get('lesson_accuracy')}%")
-        #         print(f"   🔗  Đường dẫn: {lesson.get('lesson_slug')}")
-        #         # Thông tin bổ sung nếu có
-        #         if 'error_count' in lesson:
-        #             print(f"   ❌  Số lỗi: {lesson['error_count']}")
-        #         if 'questions_wrong' in lesson:
-        #             # print(f"   ❓  Câu sai: {', '.join(lesson['questions_wrong'])}")
-        #             print(f"   ❓  Câu sai: {' -> '.join(f'{q['title']}' for q in lesson['questions_wrong'])}")
+        print("OI", recomment)
+        if recomment:
+            for idx, lesson in enumerate(recomment, 1):
+                # print(lesson)
+                # print(lesson.get('lesson_id'))
+                print(f"\n{idx}. {lesson.get('lesson_title', 'N/A')}")
+                print(f"   📖  Khóa học: {lesson.get('course_title', 'N/A')}")
+                print(f"   ⭐  Độ ưu tiên: {lesson.get('priority_score', 0):.2f}")
+                print(f"   ⭐  Thứ tự ưu tiên: {lesson.get('order_index', 0):.2f}")
+                print(f"   🤓  Độ khó: {lesson.get('difficulty_affected')}")
+                print(f"   💡  Lý do: {lesson.get('reason', 'N/A')}")
+                print(f"   💯  số câu đúng của bài học: {lesson.get('lesson_correct_total_ratio')}")
+                print(f"   💯  số câu sai của bài học: {lesson.get('lesson_wrong_total_ratio')}")
+                print(f"   🧠  Độ chính xác trong bài học: {lesson.get('accuracy_correct')}%")
+                print(f"   🔗  Đường dẫn: {lesson.get('lesson_slug')}")
+                # Thông tin bổ sung nếu có
+                if 'error_count' in lesson:
+                    print(f"   ❌  Số lỗi: {lesson['error_count']}")
+                if 'questions_wrong' in lesson:
+                    # print(f"   ❓  Câu sai: {', '.join(lesson['questions_wrong'])}")
+                    print(f"   ❓  Câu sai: {' -> '.join(f'{q['title']}' for q in lesson['questions_wrong'])}")
                     
         #         learner_data = {
         #             'lesson_id': lesson.get('lesson_id'),

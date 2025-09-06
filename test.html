@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f0f9ff"/>
+      <stop offset="100%" style="stop-color:#e0f2fe"/>
+    </linearGradient>
+    
+    <!-- Arrow marker -->
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#1e40af"/>
+    </marker>
+    
+    <!-- Data flow marker -->
+    <marker id="dataflow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#059669"/>
+    </marker>
+  </defs>
+  
+  <rect width="1200" height="800" fill="url(#bgGradient)"/>
+  
+  <!-- Title -->
+  <text x="600" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#1e40af">
+    HỆ THỐNG HỌC TẬP CÁ NHÂN HÓA THÍCH ỨNG
+  </text>
+  
+  <!-- Central Data Hub -->
+  <circle cx="600" cy="400" r="80" fill="#1e40af" opacity="0.1" stroke="#1e40af" stroke-width="2"/>
+  <circle cx="600" cy="400" r="60" fill="#1e40af" opacity="0.2"/>
+  <text x="600" y="390" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#1e40af">
+    DỮ LIỆU
+  </text>
+  <text x="600" y="405" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#1e40af">
+    NGƯỜI HỌC
+  </text>
+  <text x="600" y="420" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#1e40af">
+    AI Analytics
+  </text>
+  
+  <!-- Phase 1: Thu thập dữ liệu -->
+  <g id="phase1">
+    <rect x="50" y="80" width="200" height="120" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+    <text x="150" y="105" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#92400e">
+      1. THU THẬP DỮ LIỆU
+    </text>
+    
+    <!-- Data collection items -->
+    <circle cx="80" cy="130" r="4" fill="#f59e0b"/>
+    <text x="90" y="135" font-family="Arial, sans-serif" font-size="11" fill="#92400e">
+      Hành vi học tập
+    </text>
+    
+    <circle cx="80" cy="150" r="4" fill="#f59e0b"/>
+    <text x="90" y="155" font-family="Arial, sans-serif" font-size="11" fill="#92400e">
+      Tốc độ tiếp thu
+    </text>
+    
+    <circle cx="80" cy="170" r="4" fill="#f59e0b"/>
+    <text x="90" y="175" font-family="Arial, sans-serif" font-size="11" fill="#92400e">
+      Điểm yếu/mạnh
+    </text>
+  </g>
+  
+  <!-- Phase 2: Phân tích AI -->
+  <g id="phase2">
+    <rect x="320" y="80" width="200" height="120" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+    <text x="420" y="105" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#1e40af">
+      2. PHÂN TÍCH AI
+    </text>
+    
+    <circle cx="350" cy="130" r="4" fill="#3b82f6"/>
+    <text x="360" y="135" font-family="Arial, sans-serif" font-size="11" fill="#1e40af">
+      Mô hình học tập
+    </text>
+    
+    <circle cx="350" cy="150" r="4" fill="#3b82f6"/>
+    <text x="360" y="155" font-family="Arial, sans-serif" font-size="11" fill="#1e40af">
+      Dự đoán hiệu suất
+    </text>
+    
+    <circle cx="350" cy="170" r="4" fill="#3b82f6"/>
+    <text x="360" y="175" font-family="Arial, sans-serif" font-size="11" fill="#1e40af">
+      Phân nhóm khả năng
+    </text>
+  </g>
+  
+  <!-- Phase 3: Tạo lộ trình -->
+  <g id="phase3">
+    <rect x="880" y="80" width="200" height="120" rx="10" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+    <text x="980" y="105" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#15803d">
+      3. TẠO LỘ TRÌNH
+    </text>
+    
+    <circle cx="910" cy="130" r="4" fill="#22c55e"/>
+    <text x="920" y="135" font-family="Arial, sans-serif" font-size="11" fill="#15803d">
+      Nội dung phù hợp
+    </text>
+    
+    <circle cx="910" cy="150" r="4" fill="#22c55e"/>
+    <text x="920" y="155" font-family="Arial, sans-serif" font-size="11" fill="#15803d">
+      Thứ tự học tập
+    </text>
+    
+    <circle cx="910" cy="170" r="4" fill="#22c55e"/>
+    <text x="920" y="175" font-family="Arial, sans-serif" font-size="11" fill="#15803d">
+      Thời gian ước tính
+    </text>
+  </g>
+  
+  <!-- Phase 4: Thực hiện học tập -->
+  <g id="phase4">
+    <rect x="880" y="320" width="200" height="120" rx="10" fill="#fce7f3" stroke="#ec4899" stroke-width="2"/>
+    <text x="980" y="345" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#be185d">
+      4. HỌC TẬP
+    </text>
+    
+    <circle cx="910" cy="370" r="4" fill="#ec4899"/>
+    <text x="920" y="375" font-family="Arial, sans-serif" font-size="11" fill="#be185d">
+      Bài học tương tác
+    </text>
+    
+    <circle cx="910" cy="390" r="4" fill="#ec4899"/>
+    <text x="920" y="395" font-family="Arial, sans-serif" font-size="11" fill="#be185d">
+      Thực hành cá nhân
+    </text>
+    
+    <circle cx="910" cy="410" r="4" fill="#ec4899"/>
+    <text x="920" y="415" font-family="Arial, sans-serif" font-size="11" fill="#be185d">
+      Đánh giá liên tục
+    </text>
+  </g>
+  
+  <!-- Phase 5: Giám sát & Đánh giá -->
+  <g id="phase5">
+    <rect x="320" y="580" width="200" height="120" rx="10" fill="#f3e8ff" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="420" y="605" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#6d28d9">
+      5. GIÁM SÁT
+    </text>
+    
+    <circle cx="350" cy="630" r="4" fill="#8b5cf6"/>
+    <text x="360" y="635" font-family="Arial, sans-serif" font-size="11" fill="#6d28d9">
+      Theo dõi tiến độ
+    </text>
+    
+    <circle cx="350" cy="650" r="4" fill="#8b5cf6"/>
+    <text x="360" y="655" font-family="Arial, sans-serif" font-size="11" fill="#6d28d9">
+      Phân tích khó khăn
+    </text>
+    
+    <circle cx="350" cy="670" r="4" fill="#8b5cf6"/>
+    <text x="360" y="675" font-family="Arial, sans-serif" font-size="11" fill="#6d28d9">
+      Đo lường hiệu quả
+    </text>
+  </g>
+  
+  <!-- Phase 6: Tối ưu hóa -->
+  <g id="phase6">
+    <rect x="50" y="580" width="200" height="120" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+    <text x="150" y="605" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#dc2626">
+      6. TỐI ƯU HÓA
+    </text>
+    
+    <circle cx="80" cy="630" r="4" fill="#ef4444"/>
+    <text x="90" y="635" font-family="Arial, sans-serif" font-size="11" fill="#dc2626">
+      Điều chỉnh lộ trình
+    </text>
+    
+    <circle cx="80" cy="650" r="4" fill="#ef4444"/>
+    <text x="90" y="655" font-family="Arial, sans-serif" font-size="11" fill="#dc2626">
+      Cập nhật nội dung
+    </text>
+    
+    <circle cx="80" cy="670" r="4" fill="#ef4444"/>
+    <text x="90" y="675" font-family="Arial, sans-serif" font-size="11" fill="#dc2626">
+      Cá nhân hóa sâu
+    </text>
+  </g>
+  
+  <!-- Data flows to center -->
+  <line x1="250" y1="140" x2="520" y2="350" stroke="#059669" stroke-width="2" marker-end="url(#dataflow)"/>
+  <line x1="520" y1="140" x2="540" y2="350" stroke="#059669" stroke-width="2" marker-end="url(#dataflow)"/>
+  <line x1="880" y1="380" x2="680" y2="400" stroke="#059669" stroke-width="2" marker-end="url(#dataflow)"/>
+  <line x1="420" y1="580" x2="600" y2="480" stroke="#059669" stroke-width="2" marker-end="url(#dataflow)"/>
+  <line x1="250" y1="640" x2="520" y2="450" stroke="#059669" stroke-width="2" marker-end="url(#dataflow)"/>
+  
+  <!-- Process flow arrows -->
+  <path d="M 250 140 Q 300 140 320 140" fill="none" stroke="#1e40af" stroke-width="3" marker-end="url(#arrowhead)"/>
+  <path d="M 520 140 Q 700 140 880 140" fill="none" stroke="#1e40af" stroke-width="3" marker-end="url(#arrowhead)"/>
+  <path d="M 980 200 Q 980 260 980 320" fill="none" stroke="#1e40af" stroke-width="3" marker-end="url(#arrowhead)"/>
+  <path d="M 880 380 Q 650 500 520 580" fill="none" stroke="#1e40af" stroke-width="3" marker-end="url(#arrowhead)"/>
+  <path d="M 320 640 Q 280 640 250 640" fill="none" stroke="#1e40af" stroke-width="3" marker-end="url(#arrowhead)"/>
+  <path d="M 150 580 Q 150 300 150 200" fill="none" stroke="#1e40af" stroke-width="3" marker-end="url(#arrowhead)"/>
+  
+  <!-- Adaptive Learning Components -->
+  <g id="components">
+    <!-- Machine Learning Engine -->
+    <rect x="600" y="80" width="180" height="80" rx="8" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+    <text x="690" y="100" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#dc2626">
+      Động Cơ ML
+    </text>
+    <text x="690" y="115" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#dc2626">
+      Deep Learning
+    </text>
+    <text x="690" y="128" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#dc2626">
+      Neural Networks
+    </text>
+    <text x="690" y="141" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#dc2626">
+      Predictive Analytics
+    </text>
+    
+    <!-- Real-time Adaptation -->
+    <rect x="600" y="580" width="180" height="80" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
+    <text x="690" y="600" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#047857">
+      Thích Ứng Thời Gian Thực
+    </text>
+    <text x="690" y="615" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#047857">
+      Auto-adjustment
+    </text>
+    <text x="690" y="628" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#047857">
+      Smart Recommendations
+    </text>
+    <text x="690" y="641" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#047857">
+      Dynamic Difficulty
+    </text>
+  </g>
+  
+  <!-- Feedback Loops -->
+  <ellipse cx="150" cy="350" rx="40" ry="20" fill="none" stroke="#f97316" stroke-width="2" stroke-dasharray="5,5"/>
+  <text x="150" y="355" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#f97316">
+    Feedback Loop
+  </text>
+  
+  <ellipse cx="980" cy="500" rx="40" ry="20" fill="none" stroke="#f97316" stroke-width="2" stroke-dasharray="5,5"/>
+  <text x="980" y="505" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#f97316">
+    Feedback Loop
+  </text>
+  
+  <!-- Performance Indicators -->
+  <g id="kpis">
+    <rect x="50" y="250" width="100" height="60" rx="5" fill="#fffbeb" stroke="#f59e0b" stroke-width="1"/>
+    <text x="100" y="270" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#92400e">
+      KPIs
+    </text>
+    <text x="100" y="285" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#92400e">
+      Tỷ lệ hoàn thành
+    </text>
+    <text x="100" y="298" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#92400e">
+      Thời gian học
+    </text>
+  </g>
+  
+</svg>
+</body>
+</html>

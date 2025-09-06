@@ -1,0 +1,782 @@
+TRƯỜNG ĐẠI HỌC TÂY ĐÔ
+KHOA KỸ THUẬT - CÔNG NGHỆ
+		
+
+KHÓA LUẬN
+HỆ THỐNG HỌC TẬP THÔNG MINH ỨNG DỤNG TRÍ TUỆ NHÂN TẠO (MODULE HỆ THỐNG GỢI Ý CÁ NHÂN HÓA LỘ TRÌNH HỌC TẬP HỌC BẰNG TRÍ TUỆ NHÂN TẠO)
+
+
+Chuyên ngành: Công nghệ thông tin
+Sinh viên thực hiện:
+Lý Hải Linh - 217060166
+
+	     TP. Cần Thơ 2025
+TRƯỜNG ĐẠI HỌC TÂY ĐÔ
+KHOA KỸ THUẬT - CÔNG NGHỆ
+
+
+KHÓA LUẬN
+HỆ THỐNG HỌC TẬP THÔNG MINH ỨNG DỤNG TRÍ TUỆ NHÂN TẠO (MODULE HỆ THỐNG GỢI Ý CÁ NHÂN HÓA LỘ TRÌNH HỌC TẬP HỌC BẰNG TRÍ TUỆ NHÂN TẠO)
+
+Chuyên ngành: Công nghệ thông tin
+
+
+Giáo viên hướng dẫn:             ThS. Bùi Xuân Tùng
+	             Sinh viên thực hiện:             
+             Lý Hải Linh - 217060166
+	      
+NHẬN XÉT CỦA GIẢNG VIÊN HƯỚNG DẪN
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+Cần Thơ, ngày      tháng      năm 2025
+
+
+
+Bùi Xuân Tùng
+
+
+
+
+
+
+
+
+NHẬN XÉT CỦA GIẢNG VIÊN PHẢN BIỆN
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+Cần Thơ, ngày  …  tháng  ...  năm 2025
+           								Giảng viên nhận xét
+
+
+
+
+
+
+
+
+LỜI CẢM ƠN
+Sau một thời gian tìm hiểu và thực hiện, em đã hoàn thành xong Khóa luận của mình, đề tài AI gợi ý và theo dõi tiến trình học. Đây là một dự án mà em đã dành nhiều thời gian và công sức để nghiên cứu và phát triển. Em xin chân thành cảm ơn quý Thầy (Cô) khoa Công nghệ thông tin đã truyền đạt cho em những kiến thức nền tảng, hữu ích về các kỹ năng lập trình cơ bản, cấu trúc dữ liệu và giải thuật, qua đó giúp em hoàn thành đề tài này.
+Em xin cảm ơn nhà trường đã tạo môi trường học tập và rèn luyện rất tốt, cung cấp cho em những kiến thức và kỹ năng bổ ích giúp em có thể áp dụng và thuận lợi hoàn thành niên luận lần này. Em cũng xin gửi lời cảm ơn sâu sắc đến gia đình, những người đã luôn bên cạnh ủng hộ em, là nguồn động lực to lớn để em vượt qua mọi khó khăn và thử thách.
+Khóa luận này không thể hoàn thành mà không có sự hỗ trợ từ những người xung quanh. Em cam kết rằng kiến thức và những kinh nghiệm thu thập được từ dự án này sẽ là nguồn động lực không ngừng trong sự phát triển cá nhân và sự nghiệp tương lai. Đặc biệt, việc tìm hiểu sâu về AI, Machine Learning và NLP để cá nhân hóa trải nghiệm học tập, tự động hóa quy trình quản lý khóa học, đánh giá, hỗ trợ kỹ thuật và tương tác trực tuyến đã mang lại cho em những kiến thức vô cùng quý giá. Em cũng xin cảm ơn những anh chị khóa trên đã hỗ trợ nhiệt tình cho em, qua đó em có thể học hỏi thêm kinh nghiệm quý báu từ những người đi trước, từ đó hoàn thành niên luận 3 một cách tốt nhất.
+Em xin chân thành cảm ơn thầy Bùi Xuân Tùng đã tận tình hướng dẫn em trong suốt thời gian thực hiện đề tài Khóa luận. Trong suốt quá trình này, thầy luôn luôn chiếu cố em khi có thắc mắc, từ đó thầy đã giải đáp giúp em hiểu hơn về vấn đề mà em đã gặp phải. Sự hướng dẫn tận tình của thầy đã giúp em hoàn thiện kỹ năng nghiên cứu, phát triển và triển khai ứng dụng thực tế.
+Mặc dù đã cố gắng hoàn thành đề tài trong phạm vi và khả năng cho phép nhưng chắc chắn không tránh khỏi những thiếu sót. Em mong nhận được sự đánh giá và góp ý của Thầy và các bạn để có thể hoàn thiện hơn trong những dự án sau này.
+Một lần nữa, em xin chân thành cảm ơn tất cả mọi người đã hỗ trợ và đồng hành cùng em trong suốt quá trình thực hiện đề tài niên luận này.
+
+SINH VIÊN THỰC HIỆN
+Lý Hải Linh
+
+
+
+TRƯỜNG ĐẠI HỌC TÂY ĐÔ                 Cộng Hòa Xã Hội Chủ Nghĩa Việt Nam      KHOA KỸ THUẬT CÔNG NGHỆ                      Độc lập - Tự do - Hạnh phúc 
+KHUNG ĐÁNH GIÁ KHÓA LUẬN
+STT	HỌ VÀ TÊN	MSSV	THƯỞNG	ĐIỂM	KÝ TÊN
+1	Nguyễn Hoàng Kha	217060159			
+
+I.HÌNH THỨC(Tối đa 1.0 điểm)	Nhận Xét	Điểm
+Bìa(0.5 điểm)		
+Bố cục(0.5 điểm)		
+II. NỘI DUNG(Tối đa 4.5 điểm)		
+Giới thiệu(0.5 điểm)		
+Lý thuyết(1 điểm)		
+Ứng dụng(2.5 điểm)		
+Kết luận(0.5 điểm)		
+III. CHƯƠNG TRÌNH DEMO (Tối đa 3.5 điểm)		
+Giao diện(1 điểm)		
+Thao tác(2.5 điểm)		
+
+IV.THƯỞNG(Tối đa 1.0 điểm)		
+
+TỔNG CỘNG: ………………………………
+								Cần Thơ, ngày      tháng      năm 2025
+							
+									
+									Bùi Xuân Tùng
+
+
+
+	MỤC LỤC	
+LỜI CẢM ƠN	iii
+MỘT SỐ KÝ HIỆU VÀ VIẾT TẮT	x
+LỜI MỞ ĐẦU	xi
+1. Lý do chọn đề tài	xi
+2. Mục tiêu của đề tài	xii
+3. Đối tượng và phạm vi nghiên cứu	xii
+4. Phương pháp nghiên cứu	xiii
+CHƯƠNG 1: TỔNG QUAN	1
+1.1 Mô tả bài toán và đặc tả đề tài	1
+1.1.1 Mô tả bài toán	1
+1.1.2 Đặc tả đề tài	1
+1.2 Mục tiêu cần đạt được	2
+1.3 Hướng giải quyết và kế hoạch thực hiện	4
+1.3.1 Hướng giải quyết	4
+1.3.2 Kế hoạch thực hiện	4
+1.4	Công nghệ và công cụ sử dụng	5
+CHƯƠNG 2: CƠ SỞ LÝ THUYẾT	6
+2.1 Lập trình Android	6
+2.1.1 Quá trình làm nên một ứng dụng Android	6
+2.1.2 Những ngôn ngữ và công cụ lập trình Android thông dụng	7
+2.2 Hệ quản trị cơ sở dữ liệu MySQL	8
+2.4 Phần mềm Android Studio	9
+2.5 Phần mềm Power Designer	10
+2.6 Phần mềm Sublime Text	10
+2.7 Mô Hình MCD	10
+2.8 Mô hình MLD	11
+CHƯƠNG 3: CÀI ĐẶT CHƯƠNG TRÌNH VÀ DEMO	13
+3.1 Xây dựng mô hình	13
+3.1.1 Mô hình MCD	13
+3.1.2 Mô hình MLD	13
+3.1.3 Mô hình MPD	15
+3.2 Demo chương trình	23
+3.2.1 Mô tả chức năng ứng dụng du lịch giao diện phía người dùng	23
+3.2.1.1 Trang chủ	23
+3.2.1.2 Trang Explore	25
+3.2.1.3 Trang mô tả vé	26
+3.2.1.4 Trang mô tả vé	27
+3.2.1.5 Trang Bookmark	28
+3.2.1.5 Trang Profile	29
+3.2.1.6 Trang chỉnh sửa Profile	30
+3.2.1.7 Trang đăng nhập	31
+3.2.1.8 Trang đăng ký	32
+3.2.2 Mô tả chức năng ứng dụng du lịch giao diện quản lý	33
+3.2.2.1 Trang chủ	33
+3.2.2.2 Trang quản lý người dùng	34
+3.2.2.3 Trang thêm người dùng mới và cập nhật người dùng	35
+3.2.2.4 Trang quản lý vé du lịch	36
+3.2.2.5 Trang chi tiết của đặt vé	37
+3.2.2.6 Trang thêm mới và cập nhật vé du lịch	38
+3.2.2.7 Trang thống kê	39
+3.3 Sơ đồ chức năng và lưu đồ giải thuật	40
+3.3.1 Sơ đồ chức năng	40
+3.3.2. Lưu đồ giải thuật	42
+3.3.2.1 Thêm vé du lịch	42
+3.3.2.2 Cập nhật vé du lịch	44
+3.3.2.3 Thống kê	45
+3.3.2.4 Quy trình đặt vé du lịch trên giao diện người dùng	46
+CHƯƠNG 4: KẾT LUẬN VÀ ĐÁNH GIÁ	47
+4.1 Kết quả đạt được	47
+4.2 Hạn chế	47
+4.3 Hướng phát triển	48
+TÀI LIỆU KHAM KHẢO	49
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DANH MỤC HÌNH ẢNH
+Hình 3. 1 Mô hình Model Conteptual Data	13
+Hình 3. 2 Mô hình Model Logical Data	14
+Hình 3. 3 Trang chủ giao diện phía người dùng	23
+Hình 3. 4 Trang Explore vé du lịch	25
+Hình 3. 5 Trang mô tả vé	26
+Hình 3. 6 Trang chi tiết vé	27
+Hình 3. 7 Trang vé yêu thích	28
+Hình 3. 8 Trang Profile	29
+Hình 3. 9 Trang chỉnh sửa Profile	30
+Hình 3. 10 Trang đăng nhập	31
+Hình 3. 11 Trang đăng ký	32
+Hình 3. 12 Trang chủ giao diện quản lý	33
+Hình 3. 13 Trang quản lý người dùng	34
+Hình 3. 14 Trang thêm và cập nhật người dùng	35
+Hình 3. 15 Trang quản lý vé du lịch	36
+Hình 3. 16 Trang chi tiết của vé đã đặt	37
+Hình 3. 17 Trang thêm và cập nhật vé du lịch	38
+Hình 3. 18 Trang thống kê	39
+Hình 3. 19 Sơ đồ chức năng quản lý du lịch	40
+Hình 3. 20 Sơ đồ chức năng giao diện phía người dùng	41
+Hình 3. 21 Lưu đồ thêm vé du lịch	42
+Hình 3. 22 Lưu đồ sửa xóa vé du lịch	44
+Hình 3. 23 Lưu đồ thống kê	45
+Hình 3. 24 Lưu đồ đặt vé du lịch của người dùng	46
+
+
+
+DANH MỤC BẢNG
+Bảng 3. 1 Cấu trúc chi tiết người dùng	15
+Bảng 3. 2 Cấu trúc chi tiết địa điểm du lịch	16
+Bảng 3. 3 Cấu trúc chi tiết của khách sạn	16
+Bảng 3. 4 Cấu trúc chi tiết của giảm giá	17
+Bảng 3. 5 Cấu trúc chi tiết của phương thức thanh toán	17
+Bảng 3. 6 Cấu trúc chi tiết của phương tiện	18
+Bảng 3. 7 Cấu trúc chi tiết của hoạt động	18
+Bảng 3. 8 Cấu trúc chi tiết của đánh giá địa điểm	19
+Bảng 3. 9 Cấu trúc chi tiết của đánh giá hoạt động	19
+Bảng 3. 10 Cấu trúc chi tiết của đánh giá phương tiện	20
+Bảng 3. 11 Cấu trúc chi tiết của vé	21
+Bảng 3. 12 Cấu trúc chi tiết của vé	22
+
+
+
+
+
+
+
+
+
+
+
+
+
+MỘT SỐ KÝ HIỆU VÀ VIẾT TẮT
+Kí Hiệu	Viết Tắt
+2FA	Two-Factor Authentication
+AI	Artificial Intelligence
+API	Application Programming Interface
+CI/CD	Continuous Integration/Continuous Deployment
+DB	Database
+ERD	Entity-Relationship Diagram
+JWT	JSON Web Token
+LLM	Large Language Model
+LMS	Learning Management System
+ML	Machine Learning
+NLP	Natural Language Processing
+PWA	Progressive Web App
+RAG	Retrieval-Augmented Generation
+RBAC	Role-Based Access Control
+SDK	Software Development Kit
+SSR	Server-Side Rendering
+UI	User Interface
+UX	User Experience
+SQL	Structured Query Language
+
+
+
+
+LỜI MỞ ĐẦU
+Tài liệu này trình bày một công trình nghiên cứu liên quan đến AI gợi ý và theo dõi tiến trình học trên nền tảng học trực tuyến. Cung cấp một cái nhìn mạch lạc, có hệ thống về các kết quả đạt được. Nội dung tập trung vào mô tả các thành phần kỹ thuật đã phát triển, cách vận hành của hệ thống, quá trình kiểm thử, phân tích.
+Báo cáo cũng làm sáng tỏa quá trình vận hành của hệ thống, cách thức hệ thống phản ứng với dữ liệu sự kiện, cách các tín hiện trạng thái người học được ghi nhận và chuyển hóa thành số chỉ theo dõi, cùng logic ra quyết định cho module gợi ý. Mục tiêu trình bày những hình ảnh chính xác về luồng vận hành và các điểm tích hợp khi áp dụng vào môi	 trường thực nghiệm
+Báo cáo cũng nêu bật đóng góp kỹ thuật của công trình: các quyết định thiết kế hệ thống, các thành phần mô - đun, cũng như nguyên mẫu phần mềm minh họa cách thức tích hợp mô hình gợi ý vào luồng trải nghiệm học tập. Các phần chú ý đến khả năng mở rộng, khả năng bảo trì và những yêu cầu kỹ thuật cần cân nhắc khi triển khai. Đồng thời, tài liệu đề cập trung thực tới những hạn chế hiện hữu của nguyên mẫu để làm cơ sở cho các bước hoàn thiện tiếp theo.
+Mong rằng tài liệu sẽ là nguồn tham khảo hữu ích cho những nhà phát triển, kỹ sư dữ liệu, quản lý sản phẩm giáo dục số và các nhà nghiên cứu quan tâm đến giải pháp gợi ý cá nhân và theo dõi tiến trình học. Mọi phản hồi, góp ý mang tính xây dựng từ độc giả đều được hoan nghênh nhằm tiếp tục hoàn thiện và mở rộng nội dung.
+
+
+CHƯƠNG 1: GIỚI THIỆU
+
+1.1 Bối cảnh 
+Chúng ta đang chứng kiến một kỷ nguyên số nơi Cuộc cách mạng Công nghiệp 4.0 và sự bùng nổ của Internet đang tái định hình toàn bộ thế giới. Trong dòng chảy mạnh mẽ đó, nền giáo dục - vốn là trụ cột của quốc gia - cũng đang đối diện với một bước chuyển mình lịch sử, mang cơ hội và thách thức. Làn sóng công nghệ mới này không chỉ làm thay đổi cách chúng ta sống và làm việc, mà còn tạo một sự dịch chuyển nhanh chóng trên thị trường lao động, đòi hỏi năng lực cá nhân phải không ngừng nâng cao và thích ứng
+Và trong kỉ nguyên số mà chúng ta đang sống, các nền tảng học tập (E-learning) đang phát triển mạnh mẽ như vũ bão, một xu thế đã thúc đẩy mạnh mẽ hơn bao giờ hết bởi những biến động toàn cầu và nhu cầu học tập suốt đời ngày càng tăng. Các trang web học tập online hiện nay đã thành công phá vỡ những rào cản không gian, thời gian và chi phí, mang tri thức đến hàng triệu người trên khắp thế giới. Chúng ta có thể học mọi thứ từ lập trình, phân tích dữ liệu đến nghệ thuật, marketing, ngay tại nhà. Đây chính là một bước tiến vĩ đại trong việc dân chủ hóa giáo dục 
+Tuy nhiên, các nền tảng học tập trực tuyến đang phải đối mặt với một thực trạng đáng báo động và một bài toán hóc búa khi có hơn 90% số người đăng ký các khóa học trực tuyến không bao giờ hoàn thành khóa học. Con số phản ánh sự lãng phí tài nguyên và sự hạn chế của E-learning hiện tại.
+Nguyên nhân cốt lõi dẫn đến tình trạng đáng báo động này nằm ở việc thiếu vắng hai yếu tố then chốt và cốt lỗi của ngày giáo dục truyền thống: sự tương tác cá nhân hóa và sự định hướng kịp thời. Trong một lớp học thực tế, giáo viên không chỉ một người giảng dạy, mà còn là người quan sát, người cố vấn. Họ có thể nhận ra sinh viên đang gặp khó khăn qua nét mặt, điều chỉnh tốc độ bài giảng khi lớp đuối sức, đưa ra những lời khuyên, những bài tập bổ sung được “may đo” cho từng học sinh. Ngược lại, môi trường trực tuyến, ngược học thường phải trải nghiệm đơn độc và bị đặt vào một lộ trình học được thiết kế cho hàng ngàn người. Khi gặp một khá niệm khó, họ không thể hỏi ai ngay lập tức. Khi mất động lực, không ai thúc đẩy. Họ dễ thấy lạc lõng và quá tải. Họ không biết bản thân có đang đi đúng hướng và không biết bản thân đang đứng ở đâu trên con đường học tập của mình. Cảm giác mơ hồ và thiếu định hướng này chính là “kẻ giết người thầm lặng” dẫn người học đến việc từ bỏ
+
+
+Trước thực trạng đó, đề tài “AI gợi ý và theo dõi tiến trình học” được hình thành. Nó là giải pháp có mục tiêu rõ ràng, nhằm khắc phục hạn chế của E-learning. Đây không phải là chạy theo xu hướng, mà là một nỗ lực có chủ đích nhằm nâng caao trải nghiệm học tập online. Trọng tâm đề tài là khai phá tiềm năng AI giúp các website học tập từ những thư viện số thụ động thành những cố vấn ảo thông minh luôn đồng hành cùng người học trong suốt quá trình học	
+1.2. Mục tiêu của đề tài
+Mục tiêu là phát triển một hệ thống học trực tuyến thông minh, có khả năng tự động cá nhân hóa trải nghiệm cho từng người học. Thay vì cung cấp một lộ trình chung cho tất cả mọi người, hệ thống hoạt động như một người gia sư ảo, thấu hiểu sâu sắc năng lực và thói quen của mỗi cá nhân để đưa ra những định hướng học tập và hiệu quả nhất
+Cốt lỗi hệ thống là một bộ máy trí tuệ nhân tạo có khả năng phân tích liên tục quá trình học tập của người dùng. Nó sẽ theo dõi các yếu tố như tỷ lệ trả lời đúng, thời gian hoàn thành bài, và các điểm yếu mới phát sinh để xác định “chiến lược học tập” tối ưu nhất . Quá trình phân phân tích không chỉ dựa trên điểm số mà còn xem xét hiệu xuất trên từng cấp độ của câu hỏi, từ đó xây dựng bức tranh tổng thể toàn diện về năng lực của người học. 
+1.3. Đối tượng và phạm vi nghiên cứu
+Đối tượng nghiên cứu chính là quá trình của học của người học trên nền tảng giáo dục trực tuyến và khả năng ứng dụng các thuật toán học máy để phân tích, tối ưu quá trình này. Nghiên cứu tập trung vào việc phân tích dữ liệu học, bao gồm dữ liệu về hiệu suất và dữ liệu hành vi cũng như tìm hiểu mối quan hệ giữa các mẫu dữ liệu này và hiệu quả học tập thực tế của người học đảm bảo tính khả thi và chiều sâu.
+Phạm vi nghiên cứu của đề tài được xác định một cách chặt chẽ, tuân thủ nguyên tác tập trung vào chiều sâu phân tích thay vì dàn trải tính năng, nhằm đảm bảo tính khả khi thay vì dàn trải tính năng, nhằm đảm bảo tính khả thi và giá trị khoa học. Các giới hạn cụ thể của đề tài được xác định trên ba phương diện chính: dữ liệu, chức năng và phương pháp luận. Mọi quá trình phân tích, huấn luyện mô hình kiểm thử đều được thực hiện trên tập dữ liệu khép kín. Đề tài không thực việc thu nhập dữ liệu từ nhiều nền tảng khác nhau, điều này đảm bảo tính nhất quán dữ liệu.Hệ thống hoạt động như một lớp trí tuệ bổ sung, khai thác nền tảng nội dung chứ không can thiệp vào nó. 
+
+1.4. Phương pháp nghiên cứu
+Để đạt được các mục tiêu đã đề ra, đề tài áp dụng nghiên cứu định lượng, kết hợp với cách tiếp cận mang tính xây dựng. Triển khai và đánh giá một hệ thống phần  mềm hoàn chỉnh, sử dụng các kỹ thuật của khoa học dữ liệu và học máy. Dữ liệu thô từ các bảng sẽ được liên kết, làm sạch và chuyển đổi về định dạng phù hợp cho việc phân tích. Bước tiếp theo là trích xuất đặc trưng, nhằm chuyển hóa dữ liệu thô thành những thông tin có ý nghĩa cho mô hình học máy. Các đặc trưng này được xây dựng riêng cho hai bài toán chính: các đặc trưng về hiệu suất học tập cho mô hình dự đoán chiến lược học và đặc trưng về hành vi cho mô hình nhận diện thái độ. Quá trình huấn luyện bao gồm việc chia dữ liệu thành tập huấn luyện và tập kiểm thử, đồng thời áp dụng kỹ thuật tìm kiếm lưới để tự động tìm ra bộ tham số tối ưu cho mô hình.
+
+
+
+
+CHƯƠNG 2: TỔNG QUAN TÀI LIỆU
+2.1 Tổng quan về Hệ thống Quản lý Học tập (LMS)
+Hệ thống Quản lý Học tập (Learning Management System - LMS) là một nền tảng giáo dục số được thiết kế để quản lý, phân phối và theo dõi các chương trình học tập. Về cơ bản, một LMS truyền thống thường hoạt động theo mô hình "một kích cỡ cho tất cả" (one-size-fits-all), tập trung vào các chức năng quản trị và số hóa tài liệu. Tuy nhiên, các nền tảng này đang đối mặt với nhiều thách thức lớn, đặc biệt là trong bối cảnh giáo dục hiện đại.
+Một LMS truyền thống là một nền tảng được xây dựng để giải quyết bài toán số hóa tài liệu, quản lý khóa học và triển khai giáo dục từ xa. Các chức năng cốt lõi bao gồm:
+Quản lý khóa học: Cho phép giảng viên tạo, chỉnh sửa và sắp xếp nội dung bài giảng
+Phân phối nội dung: Cung cấp kho lưu trữ cho tài liệu, video, và các tài nguyên học tập khác để học viên truy cập.
+Quản lý người dùng: Đăng ký, phân quyền và theo dõi thông tin cơ bản của học viên và giảng viên.
+Đánh giá cơ bản: Hỗ trợ các bài kiểm tra trắc nghiệm và chấm điểm thủ công.
+Mặc dù có nhiều ưu điểm, LMS truyền thống vẫn tồn tại những hạn chế đáng kể, dẫn đến tỷ lệ học viên bỏ dở khóa học cao và trải nghiệm học tập không hiệu quả.
+Thiếu cá nhân hóa: Các nền tảng này thường cung cấp một lộ trình học tập chung cho tất cả mọi người, bất kể trình độ, sở thích hay mục tiêu cá nhân của họ là gì. Điều này có thể khiến người học cảm thấy nhàm chán với nội dung quá dễ hoặc nản lòng trước kiến thức quá khó.
+Thiếu tương tác và định hướng: Trong môi trường học trực tuyến truyền thống, người học thường cảm thấy cô đơn và thiếu sự hỗ trợ, không có ai để hỏi đáp ngay lập tức khi gặp khó khăn, cũng như không có ai thúc đẩy khi mất động lực.
+Áp lực công việc lên giảng viên: Giảng viên phải dành nhiều thời gian cho các công việc lặp đi lặp lại như chấm bài, quản lý điểm số và theo dõi tiến độ chung của cả lớp. Điều này làm giảm thời gian họ có thể dành cho việc cố vấn chuyên sâu và thiết kế nội dung sáng tạo.
+Trước những thách thức này, sự ra đời của một LMS thông minh ứng dụng AI là một giải pháp cấp thiết, nhằm chuyển đổi nền tảng học trực tuyến từ một kho lưu trữ thụ động thành một cố vấn ảo chủ động, luôn đồng hành cùng người học.
+	
+2.2 Tiền xử lý và chuẩn hóa dữ liệu 
+2.2.1 Tiền xử lý
+Với sự đa dạng dữ liệu về quá trình học của người học thì quá trình tiền xử lý dữ liệu là một bước nền tảng quan trọng, có mục tiêu chuyển đổi dữ liệu thô, phân mảnh từ cơ sở dữ liệu (Database - DB) thành một bộ dữ liệu sạch, có cấu trúc và giàu thông tin, sẵn sàng cho việc huấn luyện mô hình.
+Ở giai đoạn đầu, hệ thống sẽ tiến thành lấy thông tin người học từ DB của Hệ thống LMS qua các phép toán liên kết bảng, dữ liệu người học được lấy về sẽ được hợp nhất thông tin. Quá trình này sẽ tạo ra một bộ dữ liệu tổng hợp, cung cấp một cái nhìn đa chiều và toàn diện về từng quá trình hoạt động học tập của người dùng
+Sau đó dữ liệu sẽ được làm sạch để giải quyết các vấn đề về chất lượng dữ liệu. Các giá trị bị thiếu được xử lý cách gán giá trị mặc định hợp lý, đối với những dữ liệu có cấu trúc phức tạp, hệ thống thực hiện phân tích và bó tách để trích xuất thông tin chi tiết. Đồng thời , các logic kiểm tra cũng được áp dụng để loại bỏ các bản ghi trùng lặp, tính toán toàn vẹn và chính xác dữ liệu.
+Bước cuối cùng là chuyển đổi và trích xuất đặc trưng từ các dữ liệu được làm sạch, hệ thống từ đó sẽ tạo ra các đặc trưng có ý nghĩa hơn. Sau khi đã có được các véc-tơ đặc trưng hoàn chỉnh thì giai đoạn chuẩn hóa sẽ được tiến hành. Từ đó trả về một dữ liệu hoàn chỉnh cho mô hình
+2.2.2 Chuẩn hóa dữ liệu
+Từ những dữ liệu được trả về sau tiền xử lý là các véc-tơ đặc trưng. Tuy nhiên các véc-tơ này vẫn còn có độ lớn và thang đô khác biệt. Sự chênh lệch này có thể làm cho các thuật toán máy học máy diễn giải sai lệch về tầm quan trọng của các đặc trưng, dẫn đến mô hình ưu tiên các đặc trưng có độ lớn hơn một cách không chính xác. Nên việc đồng bộ thang đo là một bước xử lý nền tảng đảm bảo chất lượng đầu ra
+Hệ thống áp dụng một phép biến đổi liên kết biến đổi toán học lên từng cột đặc trưng trong bộ dữ liệu. Kỹ thuật này sẽ tính toán các thông số thống kê, như giá trị trung bình và độ lệch chuẩn của từng đặc trưng. Dựa trên tham số đó, nó sẽ dịch chuyển tâm của phân phối dữ liệu về giá trị. Kết quả là tất cả đặc trưng, dù ban đầu có thang do khác nhau thế nào, đều được đưa về một hệ quy chiếu chung, tạo ra “sân chơi” công bằng để thuật có thể đánh giá đúng tầm quan trọng của chúng một cách khách quan
+Quy trình tiền xử lý và chuẩn hóa đặc trưng được thiết kế để bảo đảm tính toàn vẹn của dữ liệu, đồng thời triệt tiêu nguy cơ rò rỉ dữ liệu. Nguyên tắc cốt lỗi là mọi tham số phục vụ cho việc biến đổi, chẳng hạn như giá trị trung bình và độ lệch chuẩn, đều được tính toán duy nhất trên tập dữ liệu. Chúng làm điều này bằng cách cho phép bộ biến đổi đã được cấu hình với các tham số cần thiết. Sau đó, bộ biến đổi sẽ được dùng để áp dụng một cách nhất quán lên cả hai tập . Đảm bảo thông tin từ tập kiểm thử không bị lộ vào quá trình huấn luyện. Dữ liệu đầu ra sẽ là một ma trận đặc trưng đã được chuẩn hóa, cung cấp một đầu vào nhất quán và đáng tin cho các học máy ở giai đoạn sau
+	Để thực hiện được quá trình này, hệ thống sử dụng lớp StandardScaler từ thư viện Scikit-learn. Phương pháp này biến đổi từng đặc trưng sao cho chúng có giá trị trung bình bằng 0 và độ lệch chuẩn bằng 1.
+	Công thức biến đổi cho một giá trị trong một đặc trưng:
+		
+z : là giá trị sau chuẩn hóa.
+x : là giá trị gốc.
+u : là giá trị trung bình
+s : là độ lệch chuẩn
+	Quá trình này đảm bảo rằng mỗi đặc trưng đóng góp một cách công bằng vào kết quả dự đoán của mô hình từ đó cải thiện hiệu suất và độ ổn định của mô hình.
+2.3 Các mô hình AI được sử dụng trong hệ thống
+	Để hiện thực hóa khả năng gợi ý và theo dõi tiến trình học một cách thông minh, hệ thống sử dụng các thuật toán học máy để phân tích dữ liệu và đưa ra những dự đoán chính xác. Cụ thể, mô hình rừng ngẫu nhiên (Random Forest - RF) được lựa chọn làm giải thuật cốt lõi cho cả bài toán phân loại và dự báo nhờ vào tính hiệu quả và khả năng chống học vẹt (overfitting) tốt
+2.3.1 Thuật toán Random Forest
+	Để hiểu được sức mạnh của thuật toán RF mà hệ thống sử dụng, trước tiên chúng ta cần bắt đầu với đơn vị cấu thành nên nó là cây quyết định (Decision Tree - DT). 
+
+
+Hình 2. 1: Decision Tree
+Như hình cho thấy, một cây quyết định hoạt động bằng cách chia tập dữ liệu thành các tập con nhỏ hơn dựa trên các bài kiểm tra thuộc tính. Cấu trúc của nó bao gồm nút gốc, nút trong, nhánh, và nút lá, dẫn đến một kết quả dự đoán cuối cùng. Tuy nhiên, một cây đơn lẻ rất nhạy cảm với dữ liệu huấn luyện và có xu hướng xây dựng các cấu trúc phức tạp để phù hợp với mọi điểm dữ liệu, kể cả nhiễu, dẫn đến khả năng khái quát hóa kém. Cấu trúc của nó bao gồm:
+Nút gốc (Root Node): Điểm bắt đầu, đại diện cho toàn bộ dữ liệu.
+Nút trong (Internal Nodes): Đại diện cho một bài kiểm tra trên một đặc trưng của dữ liệu.
+Nhánh (Branches): Đại diện cho kết quả kiểm tra, dẫn đến nút tiếp theo.
+Nút lá (Leaf Nodes): Đại diện cho kết quả dự đoán cuối cùng
+Có ưu điểm về tính dễ diễn giải. Nó có xu hướng xây dựng các cấu trúc phức tạp để phù hợp với mọi điểm dữ liệu, bao gồm cả nhiễu và các yếu tố ngoại lai. Điều này dẫn đến hiện tượng học vẹt (overfitting), làm giảm khả năng tổng quát hoá của mô hình khi áp dụng trên dữ liệu chưa từng thấy.
+Để khắc phục nhược điểm cố hữu của một cây đơn lẻ, thuật toán RF được phát triển. Đây là phương án học máy kết hợp thuộc loại bagging, hoạt động dựa trên nguyên tắc “trí tuệ tập thể”. Thay vì chỉ dựa vào một mô hình, Random Forest xây dựng một tập hợp gồm nhiều cây quyết định và tổng hợp kết quả từ tất cả các cây để đưa ra dự đoán cuối cùng.
+
+
+
+Hình 2. 2: Random Forest
+Hình trên đã thể hiện sự vượt trội của RF đến từ việc đưa yêu tố ngẫu nhiên vào quá trình xây dựng cây, nhằm tạo ra sự đa dạng và giảm thiểu sự tương quan giữa các mô hình con:
+Bootstrap Aggregating(Bagging): Mỗi cây quyết định trong rừng học được huấn luyện trên một tập dữ liệu mẫu khác nhau, được tạo ra bằng cách lấy mẫu có hoàn lại từ tập dữ liệu huấn luyện gốc. Do đó, mỗi cây sẽ “học” từ một góc nhìn khác nhau, giúp giảm thiểu phương sai của mô hình tổng thể
+Feature Randomness (Ngẫu nhiên đặc trưng hóa): Tại mỗi bước phân chia của một cây, thay vì xem xét tất cả các đặc trưng để tìm ra điểm chia tốt nhất, thuật toán chỉ lựa chọn một tập con ngẫu nhiên của các đặc trưng. Cơ thể này đảm bảo rằng các cây trong rừng không bị phụ thuộc quá nhiều vào một vài đặc trưng có sức ảnh hưởng lớn.
+Quá trình tổng hợp kết quả để đưa ra dự đoán cuối cùng được thực hiện như sau:
+Đối với bài toán phân loại: Kết quả được quyết định thông qua bỏ phiếu theo đa số. Lớp nào được nhiều cây dự đoán nhất sẽ được chọn làm kết quả cuối cùng. Đây là phương pháp được áp dụng trong hệ thống để dự đoán chiến lược học tập và phân loại thái độ học tập của sinh viên
+Đối với bài toán hồi quy: Kết quả là giá trị trung bình của các dự đoán từ toàn bộ các cây trong rừng. Phương án này sử dụng trong module dự báo hiệu suất để ước tính điểm số mà sinh viên có thể đạt được.
+Nhờ việc kết hợp các yếu tố ngẫu nhiên này, RF không chỉ giảm thiểu đáng kể hiện tượng học vẹt mà còn cung cấp độ chính xác cao và tính ổn định vượt trội, khiến nó trở thành lựa chọn phù hợp cho các bài toán dự đoán trong đề tài này.
+2.3.2 Các mô hình ứng dụng trong hệ thống
+	Dựa trên nền tảng thuật toán RF, hệ thống triển khai các mô hình AI	chuyên biệt bằng cách tận dụng hai năng lực chính của thuật toán là phân loại (classification) và hồi quy (regression). Việc áp dụng linh hoạt hai phương pháp này cho phép hệ thống giải quyết các bài toán dự đoán đa dạng, từ việc nhận diện các mẫu hành vi cho đến dự báo các chỉ số hiệu suất.
+	Thuật toán RF Classifier có nhiệm vụ gán một đối tượng vào một trong các lớp (nhãn) đã được định nghĩa trước. Thuật toán thực hiện điều này bằng cách tổng hợp “phiếu bầu” từ tất cả các cây quyết định trong rừng; lớp nào nhận được nhiều phiếu nhất sẽ trở thành kết quả dự đoán cuối cùng. Đảm bảo tính ổn định và chống học vẹt, thuật toán hoạt động tốt ngay cả khi có số lượng lớn các đặc trưng đầu vào, mô hình còn cung cấp một thước đo về mức độ ảnh hưởng của từng đặc trưng đến kết quả dự đoán.
+	Ứng dụng cốt lỗi nhất là khả năng phân tích hiệu suất học tập của sinh viên để đề xuất chiến lược học tập phù hợp. Thay vì áp dụng một lộ trình chung, mô hình này đảm bảo mỗi người học nhận được sự hỗ trợ đúng lúc, từ việc ôn tập kiến thức nền tảng đến thử sức với nội dung nâng cao. Không chỉ dừng lại ở đó, một mô hình phân loại khác được xây dựng để nhận diện thái độ và mức dộ chuyên cần của người học. Bằng cách phân tích mẫu hành vi dài hạn, nó hoạt động như một hệ thống cảnh báo sớm, giúp giảng viên và hệ thống can thiệp kịp thời khi phát hiện sinh viên có dấu hiệu mất tập trung hoặc nguy cơ từ bỏ. Cuối cùng, ở cấp độ theo dõi tổng thể, bài toán được dùng để dự báo xu hướng phát triển của người học, cho phép hệ thống chủ động điều chỉnh và hỗ trợ trước khi hiệu suất của sinh viên sụt giảm đáng kể.
+	Khác với thuật toán trên, thuật toán RF Regressor là một mô hình hồi quy được dùng để dự đoán cái giá trị số liên tục, cung cấp một thước đo định lượng và cụ thể về kết quả học tập. Mô hình sử dụng các đặc trưng phản ánh hiệu suất học bao gồm: tỷ lệ chính xác tổng thể, tổng số câu hỏi đã làm, hiệu suất trên từng cấp độ và số lượng chủ đề kiến thức còn yếu đưa dựa đoán về chiến lược học. Mô hình cũng tập trung vào các đặc trưng hành vi dài hạn và thu thập thông tin bao quát từ mọi khía cạnh từ tiến độ khóa học, hoạt động học tập, kết quả kiểm tra, đến các chỉ số tương tác với nội dung.
+Ứng dụng quan trọng của mô hình này là dự báo điểm số mà sinh viên có khả năng đạt được trong tương lai. Theo dõi hiệu suất tổng thể, sử dụng một bộ đặc trưng toàn diện để đưa ra con số ước tính cụ thể. Kết quả dự báo này, khi kết hợp với dự đoán về xu hướng, sẽ tạo ra một bức tranh hoàn chỉnh về năng lực và tiềm năng của người học, giúp cả sinh viên và giảng viên có những định hướng rõ ràng hơn
+2.3 Ngôn ngữ và Công nghệ sử dụng
+2.3.1. Ngôn ngữ lập trình Python:
+	Python là một ngôn ngữ lập trình bậc cao, thông dịch, hướng đối tượng và đa mục đích, được tạo ra nhằm nhấn mạnh vào tính dễ đọc của mã nguồn và cú pháp rõ ràng. Chính vì những đặc điểm này, Python đã trở thành ngôn ngữ được lựa chọn để xây dựng và triển khai toàn bộ module "AI Gợi ý và Theo dõi Tiến trình học" trong hệ thống.
+	Lý do chính khiến Python là lựa chọn tối ưu cho đề tài này đến từ hệ sinh thái Khoa học Dữ liệu và Học máy (Machine Learning - ML) vô cùng mạnh mẽ và trưởng thành. Hệ thống tận dụng các thư viện chuyên biệt để thực hiện các tác vụ phức tạp một cách hiệu quả:
+Scikit-learn: Đây là thư viện then chốt, cung cấp các công cụ triển khai thuật toán RF cho cả bài toán phân loại và hồi quy, cũng như các tiện ích tiền xử lý như StandardScaler để chuẩn hóa dữ liệu.
+Pandas: là công cụ chính cho việc thao tác và phân tích dữ liệu. Thư viện này cung cấp cấu trúc dữ liệu DataFrame, cho phép đọc dữ liệu từ các truy vấn cơ sở dữ liệu, sau đó thực hiện các thao tác làm sạch, biến đổi và tổng hợp dữ liệu hiệu suất và hành vi của người học một cách linh hoạt và hiệu quả. Đây là bước nền tảng để chuẩn bị dữ liệu cho quá trình trích xuất đặc trưng.
+NumPy: Là thư viện nền tảng cho tính toán khoa học trong Python. NumPy cung cấp các đối tượng mảng đa chiều hiệu suất cao và các công cụ để làm việc với chúng. Trong dự án, NumPy được sử dụng để xử lý các vector đặc trưng số hóa trước khi đưa vào huấn luyện và dự đoán trong các mô hình của Scikit-learn.
+
+Flask: Phía Backend của module AI được phát triển bằng framework Flask để xây dựng các API (Application Programming Interface). Điều này cho phép module AI hoạt động như một microservice độc lập, dễ dàng giao tiếp và tích hợp với các thành phần khác của hệ thống LMS.
+PyMySQL: Thư viện này được sử dụng để thiết lập kết nối và thực hiện các truy vấn đến cơ sở dữ liệu MySQL, giúp thu thập dữ liệu thô cần thiết cho quá trình phân tích.
+Trong kiến trúc tổng thể, Python đảm nhiệm vai trò xây dựng nên "AI/ML Engine" – bộ não xử lý thông minh của hệ thống. Nó chịu trách nhiệm thực thi toàn bộ luồng công việc, từ việc thu thập dữ liệu, huấn luyện mô hình cho đến việc đưa ra các dự đoán và gợi ý. Các kết quả sau đó được cung cấp cho hệ thống chính thông qua các API, đảm bảo kiến trúc linh hoạt, dễ bảo trì và mở rộng.
+2.3.2. Khái niệm về học tập thích ứng (Adaptive Learning):
+	Học tập thích ứng, hay còn gọi là Adaptive Learning, là một phương pháp giáo dục hiện đại sử dụng các công nghệ, đặc biệt là trí tuệ nhân tạo (AI) và học máy, để điều chỉnh và cá nhân hóa trải nghiệm học tập cho từng người học. Thay vì áp dụng một lộ trình học cố định cho tất cả mọi người, hệ thống sẽ linh hoạt thay đổi nội dung, tốc độ và phương pháp giảng dạy dựa trên hiệu suất, tương tác và nhu cầu của từng cá nhân.
+Học tập thích ứng hoạt động dựa trên một vòng lặp liên tục gồm ba bước chính:
+Chẩn đoán: Hệ thống đánh giá kiến thức nền tảng và phong cách học tập của người học thông qua các bài kiểm tra đầu vào (onboarding quiz) và phân tích hành vi ban đầu.
+Đề xuất: Dựa trên kết quả chẩn đoán, AI sẽ đề xuất một lộ trình học tập ban đầu phù hợp nhất. Lộ trình này không chỉ bao gồm các bài học mà còn có thể gợi ý các loại tài liệu khác nhau (video, bài viết, quiz) để phù hợp với sở thích của người học.
+Điều chỉnh: Trong suốt quá trình học, hệ thống liên tục theo dõi tiến độ, hiệu suất và tương tác của người học. Nếu một học viên hoàn thành bài tập tốt, hệ thống sẽ tự động tăng độ khó. Ngược lại, nếu họ gặp khó khăn, hệ thống sẽ đề xuất các bài tập củng cố hoặc tài liệu bổ sung để ôn lại kiến thức.
+	
+
+Lợi ích của Học tập thích ứng:
+Tăng hiệu quả học tập: Bằng cách tập trung vào những điểm yếu và củng cố kiến thức cần thiết, phương pháp này giúp người học tiếp thu kiến thức một cách sâu sắc hơn và tiết kiệm thời gian
+Duy trì động lực: Trải nghiệm học tập được cá nhân hóa, không quá dễ cũng không quá khó, giúp người học cảm thấy được thử thách vừa đủ và duy trì sự hứng thú trong suốt quá trình học
+Giảm tải cho giảng viên: Hệ thống tự động hóa các tác vụ lặp đi lặp lại như chấm điểm, theo dõi tiến độ, và đưa ra gợi ý cơ bản, giúp giảng viên có thêm thời gian để tập trung vào các vấn đề chuyên sâu và hỗ trợ cá nhân hóa hơn cho học viên.
+Trong đề tài này, Học tập thích ứng được hiện thực hóa thông qua các module AI Phân tích & Gợi ý, sử dụng các thuật toán như RF để xử lý dữ liệu hành vi và đưa ra các quyết định thông minh, giúp người học đạt được mục tiêu một cách hiệu quả nhất.
+
+
+
+CHƯƠNG 3: PHÂN TÍCH, THIẾT KẾ VÀ TRIỂN KHAI HỆ THỐNG
+3.1. Phân tích Yêu cầu Hệ thống
+	Phần này phân tích chi tiết các yêu cầu về chức năng và phi chức năng của hệ thống, nhằm làm cơ sở cho việc thiết kế và phát triển một nền tảng học tập thông minh có khả năng cá nhân hóa trải nghiệm học tập và hỗ trợ các đối tượng người dùng một cách hiệu quả
+3.1.1. Yêu cầu Chức năng
+	Phân tích yêu cầu chức năng cho hệ thống AI gợi ý và theo dõi tiến trình học tập tập trung vào việc đáp ứng nhu cầu của người học và giảng viên, giúp tối ưu hóa quá trình dạy và học
+Đối với Học viên:
+Tạo Hồ sơ Học tập (Learning Profile): Sau khi đăng ký, học viên cần làm một bài kiểm tra đánh giá năng lực ban đầu và khảo sát sở thích, mục tiêu học tập để AI tạo ra hồ sơ cá nhân hóa.
+Gợi ý Lộ trình Cá nhân hóa: Dựa trên hồ sơ học tập, hệ thống sẽ đề xuất một lộ trình học tập tối ưu, bao gồm thời gian và nội dung cụ thể. Lộ trình này có thể được điều chỉnh linh hoạt (Adaptive Learning) nếu học viên học tốt hoặc gặp khó khăn
+Theo dõi Tiến độ: Học viên có thể xem bảng điều khiển (Dashboard) cá nhân để nắm bắt tiến độ học tập, điểm số trung bình và các chủ đề cần cải thiện
+Tự đánh giá: Học viên làm các bài quiz và bài tập, hệ thống sẽ tự động chấm điểm và cung cấp phản hồi chi tiết ngay lập tức.
+Hỗ trợ 24/7: Học viên có thể tương tác với chatbot AI bất cứ lúc nào để giải đáp các thắc mắc học thuật hoặc yêu cầu hỗ trợ kỹ thuật.
+Đối với Giảng viên:
+Cảnh báo sớm: Hệ thống cần cung cấp các báo cáo chi tiết giúp giảng viên nhận biết sớm những học viên có nguy cơ bỏ dở hoặc gặp khó khăn trong quá trình học.
+Phân tích Hiệu suất Lớp học: Giảng viên có thể xem Dashboard để nắm được thống kê chung của lớp, bao gồm tỷ lệ hoàn thành bài, điểm trung bình và các câu hỏi mà học viên thường sai.
+Phản hồi Chất lượng Nội dung: Giảng viên nhận được phản hồi từ AI về chất lượng nội dung giảng dạy, dựa trên tương tác và phản hồi của học viên, từ đó có thể cải thiện giáo trình
+Công cụ Chấm bài Tự động: Hệ thống tự động chấm các bài quiz và bài tập, giúp giảm tải công việc thủ công cho giảng viên
+Đối với Quản trị viên:
+Quản lý Mô hình AI: Cần có giao diện để quản lý các mô hình AI, bao gồm việc theo dõi hiệu suất, huấn luyện lại mô hình và cấu hình các tham số
+Giám sát Hệ thống: Theo dõi nhật ký kiểm toán (audit logs) các hoạt động quan trọng liên quan đến dữ liệu và mô hình AI.
+Tùy chỉnh Cấu hình: Quản trị viên có thể điều chỉnh các thiết lập hệ thống AI, ví dụ như ngưỡng cảnh báo sớm hoặc tỷ lệ chia dữ liệu cho các thử nghiệm A/B.
+3.1.2. Yêu cầu phi chức năng
+	Các yêu cầu phi chức năng của hệ thống AI gợi ý và theo dõi tiến trình học là những yếu tố thiết yếu để đảm bảo hệ thống hoạt động ổn định và hiệu quả.
+Độ chính xác: Các mô hình AI cần đạt độ chính xác cao trong việc dự đoán hiệu suất và gợi ý lộ trình, điều này được kiểm soát bằng các kỹ thuật như A/B testing và huấn luyện lại mô hình thường xuyên.
+Thời gian thực: Các tính năng như chatbot AI và theo dõi tiến trình cần hoạt động gần với thời gian thực để học viên và giảng viên nhận được phản hồi kịp thời.
+Khả năng mở rộng: Hệ thống phải có khả năng mở rộng để xử lý lượng lớn dữ liệu học tập và phục vụ đồng thời hàng ngàn người dùng mà không bị giảm hiệu suất.
+Bảo mật dữ liệu: Bảo mật thông tin cá nhân của học viên và dữ liệu học tập là ưu tiên hàng đầu, cần áp dụng các biện pháp mã hóa dữ liệu (at rest, in transit) và các tiêu chuẩn bảo mật liên quan.
+Tính toàn vẹn của dữ liệu: Dữ liệu học tập cần được thu thập và xử lý một cách nhất quán, tránh rò rỉ dữ liệu giữa các tập huấn luyện và kiểm thử.
+
+
+
+3.2. Thiết kế Kiến trúc Hệ thống
+Thiết kế kiến trúc hệ thống là bước quan trọng để xác định cấu trúc tổng thể của hệ thống, các thành phần chính và cách chúng tương tác với nhau. Với một hệ thống học tập thông minh tích hợp AI, kiến trúc được lựa chọn cần đảm bảo tính linh hoạt, khả năng mở rộng và hiệu suất cao.
+3.2.1. Kiến trúc tổng thể (High-level Architecture)
+	Hệ thống được thiết kế theo kiến trúc Microservices để tách biệt các tính năng thành các dịch vụ độc lập, giúp việc phát triển, triển khai và mở rộng trở nên dễ dàng hơn. Dưới đây là các thành phần chính trong kiến trúc:
+Frontend: Xây dựng bằng Next.js và React để tạo giao diện người dùng (UI) tương tác, đảm bảo trải nghiệm mượt mà trên cả trình duyệt web và các thiết bị di động.
+API Gateway: Sử dụng NestJS làm cổng API để quản lý các yêu cầu từ Frontend và định tuyến chúng đến các microservices tương ứng. Điều này giúp hệ thống được bảo mật và dễ quản lý hơn.
+Microservices: Hệ thống được chia thành nhiều dịch vụ nhỏ, mỗi dịch vụ phụ trách một chức năng cụ thể:
+User Service: Quản lý thông tin người dùng, xác thực và phân quyền.
+Content Service: Quản lý các khóa học, bài học, video và tài liệu.
+Quiz/Assignment Service: Quản lý việc tạo và chấm điểm các bài kiểm tra, bài tập.
+AI/Analytics Service: Đây là trái tim của hệ thống AI, chịu trách nhiệm xử lý tất cả các tác vụ liên quan đến trí tuệ nhân tạo như phân tích dữ liệu, gợi ý cá nhân hóa và cảnh báo sớm.
+Communication Service: Xử lý các tính năng tương tác như chat thời gian thực và video call.
+Cơ sở dữ liệu (Databases): Hệ thống sử dụng kết hợp nhiều loại cơ sở dữ liệu để tối ưu hóa hiệu suất cho từng loại dữ liệu khác nhau:
+
+Hình 3. 1 : Cơ sở dữ liệu (MySQL)
+MySQL: Đóng vai trò là cơ sở dữ liệu quan hệ chính của hệ thống. Đây là nơi lưu trữ các dữ liệu có cấu trúc, quan trọng và yêu cầu tính toàn vẹn cao. Ví dụ, thông tin về người dùng, các khóa học, cấu trúc bài học, điểm số của học viên, lịch sử đăng ký, và các cài đặt hệ thống được lưu trữ tại đây. Việc sử dụng MySQL đảm bảo tính nhất quán của dữ liệu thông qua các ràng buộc khóa ngoại và giao dịch ACID, rất phù hợp cho các nghiệp vụ chính của một hệ thống LMS.
+
+Hình 3. 2: Cơ sở dữ liệu (Redis)
+Redis: Được sử dụng như một bộ nhớ đệm (in-memory cache) hiệu suất cao. Redis giúp tăng tốc độ truy cập dữ liệu bằng cách lưu trữ tạm thời các thông tin thường xuyên được truy vấn, như phiên làm việc của người dùng, token xác thực, hoặc kết quả từ các tính toán AI không thay đổi thường xuyên. Ngoài ra, Redis còn được dùng như một hàng đợi tin nhắn (message broker) để xử lý các tác vụ nền (background jobs) như gửi email tự động hoặc xử lý video, giúp hệ thống phản hồi nhanh hơn và giảm tải cho cơ sở dữ liệu chính
+
+
+Hình 3. 3: Cơ sở dữ liệu (Mongo Database)
+MongoDB/Elasticsearch: Các cơ sở dữ liệu này được sử dụng để lưu trữ dữ liệu phi cấu trúc và bán cấu trúc, nơi mà mô hình quan hệ truyền thống không còn hiệu quả. Chẳng hạn, các nhật ký hoạt động chi tiết của người dùng (user logs) hoặc lịch sử trò chuyện với chatbot, hoặc dữ liệu phức tạp từ các module AI có thể được lưu trữ tại đây. Elasticsearch đặc biệt phù hợp để lập chỉ mục toàn bộ nội dung bài giảng, video transcript và tài liệu PDF, hỗ trợ cho việc tìm kiếm thông minh và kỹ thuật RAG của chatbot
+3.2.2. Thiết kế Cơ sở dữ liệu cho AI (Database Design for AI)
+Thiết kế cơ sở dữ liệu cho module AI là một yếu tố then chốt, vì nó quyết định cách dữ liệu được thu thập, lưu trữ và truy xuất để hỗ trợ các thuật toán học máy. Các bảng sau đây được thiết kế riêng để phục vụ cho các tính năng thông minh của hệ thống.
+	- Bảng learning_activities: Đây là bảng lưu trữ chi tiết nhất về hành vi của người học. Mỗi dòng trong bảng này đại diện cho một hành động, ví dụ: bắt đầu xem video, dừng xem ở phút thứ mấy, trả lời một câu hỏi, hoặc làm một bài tập. Dữ liệu này là "nguyên liệu thô" để huấn luyện các mô hình AI.
+	- Bảng learning_profiles: Bảng này lưu trữ hồ sơ học tập cá nhân của từng học viên. Dữ liệu bao gồm kết quả từ bài kiểm tra đánh giá ban đầu, phong cách học tập, mục tiêu cá nhân, và các đặc điểm khác mà AI thu thập được từ quá trình học. Hồ sơ này là nền tảng để AI có thể đưa ra các gợi ý cá nhân hóa.
+	- Bảng ai_recommendations: Chức năng chính của bảng này là lưu trữ các gợi ý mà AI tạo ra cho học viên. Mỗi gợi ý sẽ bao gồm: loại gợi ý (ví dụ: khóa học tiếp theo, bài tập bổ sung), nội dung cụ thể, và trạng thái tương tác của học viên (ví dụ: đã xem, đã tương tác, đã hoàn thành).
+- Bảng performance_predictions và dropout_risk_assessments: Hai bảng này hoạt động như một hệ thống cảnh báo sớm. performance_predictions lưu trữ các dự đoán về điểm số hoặc hiệu suất mà một học viên có khả năng đạt được trong tương lai. Trong khi đó, dropout_risk_assessments tập trung vào việc đánh giá và cảnh báo về nguy cơ một học viên có thể từ bỏ khóa học dựa trên xu hướng học tập của họ.
+	- Bảng ab_tests: Bảng này được thiết kế để hỗ trợ việc đánh giá và tối ưu hóa các mô hình AI. Nó lưu trữ thông tin về các thử nghiệm A/B đang chạy, bao gồm tên thử nghiệm, các mô hình AI đang được so sánh (control và test), tỷ lệ phân luồng người dùng và các chỉ số thành công. Việc này giúp đảm bảo rằng các mô hình được triển khai là phiên bản hiệu quả nhất.
+
+
+- Bảng learning_outcomes: Bảng này lưu trữ kết quả đầu ra của quá trình học tập, bao gồm điểm số, chứng chỉ và các thành tích khác. Đây là dữ liệu quan trọng để AI đánh giá hiệu quả tổng thể của lộ trình học tập và tối ưu hóa các gợi ý trong tương lai.
+3.2.3. Thiết kế luồng dữ liệu (Data Flow Diagram)
+Luồng dữ liệu trong hệ thống được thiết kế để tạo ra một vòng lặp phản hồi liên tục, nơi mỗi hành động của người học đều góp phần cải thiện độ chính xác và hiệu quả của các mô hình AI. Quá trình này có thể được chia thành ba giai đoạn chính: Thu thập dữ liệu, xử lý và phân tích, và phản hồi thông minh
+
+Hình 3. 4: Sơ đồ luồng dữ liệu hệ thống AI giáo dục
+Giai đoạn 1: Thu thập dữ liệu hoạt động học tập
+Đây là giai đoạn khởi đầu, tập trung vào việc ghi lại tất cả các tương tác của người học với hệ thống.
+Tương tác của Học viên: Người học thực hiện các hoạt động như xem video bài giảng, làm bài kiểm tra, tham gia diễn đàn hoặc sử dụng chatbot.
+Ghi nhận Sự kiện: Mỗi hành động này được ghi nhận dưới dạng một sự kiện học tập (learning activity). Ví dụ, khi người học bắt đầu một bài học, hệ thống sẽ ghi lại sự kiện lesson_start. Nếu họ dừng video, sự kiện video_pause sẽ được ghi lại cùng với vị trí và thời gian tương ứng.
+Lưu trữ Dữ liệu Thô: Dữ liệu sự kiện được gửi đến các microservice backend và lưu trữ vào các bảng cơ sở dữ liệu quan trọng như learning_activities, lesson_progress, và assessment_attempts
+Giai đoạn 2: Xử lý và Phân tích Dữ liệu
+Ở giai đoạn này, dữ liệu thô được biến đổi thành những thông tin có giá trị để các mô hình AI có thể sử dụng.
+Tiền xử lý và Chuẩn hóa: Dữ liệu từ các bảng learning_activities và các nguồn khác được đưa vào AI/Analytics Service để làm sạch, xử lý các giá trị bị thiếu và chuẩn hóa. Điều này đảm bảo dữ liệu đầu vào cho mô hình là nhất quán
+Trích xuất Đặc trưng: Từ dữ liệu đã được làm sạch, hệ thống sẽ tạo ra các vector đặc trưng có ý nghĩa (ví dụ: thời gian hoàn thành bài, tỷ lệ câu trả lời đúng trên từng chủ đề).
+Vận hành Mô hình AI: Các vector đặc trưng được nạp vào các mô hình học máy đã được huấn luyện (như Random Forest). Các mô hình này thực hiện các tác vụ:
+Phân loại (Classification): Nhận diện các mô hình hành vi (ví dụ: mất tập trung) hoặc phân loại học viên để đề xuất chiến lược học tập phù hợp
+Hồi quy (Regression): Dự đoán các giá trị liên tục như điểm số tương lai hoặc thời gian hoàn thành khóa học.
+Lưu trữ Kết quả: Kết quả của quá trình phân tích được lưu trữ vào các bảng như ai_recommendations, performance_predictions, và dropout_risk_assessments.
+
+
+Giai đoạn 3: Phản hồi Thông minh đến Người dùng.
+Đây là giai đoạn hệ thống đưa ra các phản hồi trực quan và hữu ích cho người dùng, hoàn thành chu trình.
+Truy vấn API: Khi người học hoặc giảng viên truy cập các trang chuyên biệt, giao diện frontend sẽ gửi yêu cầu qua API Gateway đến các microservice tương ứng.
+Hiển thị Phản hồi: Dữ liệu đã được phân tích bởi AI (ví dụ: gợi ý khóa học tiếp theo, cảnh báo rủi ro) được trả về và hiển thị một cách trực quan trên Dashboard của học viên hoặc giảng viên. Các API cụ thể cho việc này là /api/recommend và /api/recommend-lessons để lấy gợi ý lộ trình.
+Điều chỉnh Hành vi: Dựa trên những phản hồi này, người học có thể điều chỉnh cách học, và giảng viên có thể đưa ra sự can thiệp kịp thời. Hành vi mới này lại tiếp tục được ghi nhận ở Giai đoạn 1, khởi động lại toàn bộ chu trình.
+	Luồng dữ liệu này tạo ra một hệ thống học tập chủ động, nơi AI không chỉ phản ứng với dữ liệu mà còn sử dụng dữ liệu để dự đoán, đưa ra định hướng, và liên tục cải thiện trải nghiệm cá nhân hóa.
+3.3. Thiết kế và Triển khai Các Module AI Gợi ý và Theo Dõi Tiến Trình Cốt lõi
+	Để hiện thực hóa khả năng học tập thông minh, hệ thống được xây dựng trên một bộ các module AI cốt lõi, tập trung vào việc phân tích dữ liệu, đưa ra gợi ý và theo dõi tiến trình học tập một cách hiệu quả. Các module này được thiết kế theo kiến trúc microservices, đảm bảo tính độc lập và dễ dàng nâng cấp.
+3.3.1. Module Phân tích Hành vi và Gợi ý Lộ trình
+Module này đóng vai trò là "bộ não" của hệ thống, chịu trách nhiệm thu thập, xử lý và phân tích hành vi của người học để xây dựng một lộ trình học tập cá nhân hóa.
+-  Thiết kế luồng xử lý và thu thập dữ liệu:
+Hệ thống liên tục thu thập các sự kiện học tập từ người dùng. Các sự kiện này được ghi lại một cách chi tiết trong cơ sở dữ liệu, bao gồm các hoạt động như:
+lesson_start: Khi một học viên bắt đầu một bài học
+video_pause/seek: Khi học viên tạm dừng hoặc tua video, kèm theo vị trí và thời gian
+quiz_submit: Khi học viên nộp bài quiz, bao gồm cả câu trả lời đúng/sai và thời gian làm bài.
+Lưu trữ dữ liệu: Các sự kiện này được lưu trữ trong bảng learning_activities, cung cấp một nguồn dữ liệu phong phú về thói quen học tập của từng người. Kết quả từ các bài kiểm tra ban đầu (placement test) và khảo sát sở thích cũng được lưu vào bảng learning_profiles, tạo ra một hồ sơ học tập nền tảng.
+	- Triển khai mô hình AI:
+Hệ thống sử dụng các mô hình học máy đã được huấn luyện để xử lý dữ liệu. Các mô hình này được triển khai độc lập trong một microservice AI chuyên biệt.
+Dựa trên các vector đặc trưng được trích xuất từ dữ liệu hành vi, một mô hình RF Classifier được áp dụng để phân loại người học vào các nhóm tương đồng (ví dụ: nhóm "học nhanh", nhóm "cần củng cố kiến thức nền tảng").
+Một mô hình AI khác sẽ sử dụng kết quả phân tích này để đề xuất lộ trình học tập cá nhân hóa. Lộ trình này bao gồm chuỗi các bài học được sắp xếp hợp lý, phù hợp với trình độ và mục tiêu của từng người học.
+Các gợi ý này, cùng với lý do đề xuất và mức độ tự tin của AI, sẽ được lưu trữ trong bảng ai_recommendations.
+	-  Cơ chế học tập thích ứng (Adaptive Learning):
+Trong suốt quá trình học, AI liên tục so sánh kết quả thực tế với lộ trình đã đề ra.
+Nếu học viên làm bài tốt hoặc hoàn thành sớm, AI có thể tự động tăng độ khó hoặc đề xuất nội dung nâng cao hơn.
+Ngược lại, nếu học viên gặp khó khăn (ví dụ: điểm thấp, tua lại video nhiều lần), AI sẽ gợi ý ôn lại phần kiến thức nền tảng hoặc cung cấp tài liệu bổ trợ để củng cố.
+Mỗi lần điều chỉnh, các thông tin về thay đổi này cũng sẽ được ghi lại để tối ưu hóa mô hình trong tương lai.
+3.3.2. Module Đánh giá Tự động và Theo dõi Tiến trình
+Module này được thiết kế để tự động hóa quá trình đánh giá và cung cấp các công cụ theo dõi tiến trình học tập một cách chi tiết
+
+
+
+- Thiết kế hệ thống chấm điểm tự động:
+Đối với các câu hỏi trắc nghiệm và điền vào chỗ trống, hệ thống sẽ tự động chấm điểm ngay sau khi học viên nộp bài bằng cách so sánh câu trả lời với đáp án đã được cấu hình trước.
+Đối với các bài tập lập trình, hệ thống tích hợp một môi trường sandbox để tự động biên dịch và chạy các test case, sau đó chấm điểm dựa trên độ chính xác của code.
+Kết quả chấm điểm chi tiết sẽ được lưu vào các bảng grades và assessment_attempts
+	- Tích hợp công cụ phân tích kết quả:
+Dựa trên kết quả chấm điểm, hệ thống sẽ tự động phân tích hiệu suất của từng học viên và cả lớp học.
+Giảng viên có thể truy cập các báo cáo chi tiết để biết được câu hỏi nào có tỷ lệ sai cao nhất, hoặc những học viên nào đang có dấu hiệu giảm sút phong độ.
+Một mô hình RF Regressor được sử dụng để dự đoán xu hướng điểm số trong tương lai, cung cấp một thước đo định lượng về kết quả học tập.
+Bảng performance_predictions được cập nhật với các dự đoán này, giúp giảng viên có cơ sở để đưa ra các can thiệp kịp thời
+	-  Cơ chế cảnh báo sớm và theo dõi tiến trình:	
+Hệ thống sẽ tự động nhận diện các dấu hiệu rủi ro (ví dụ: điểm số giảm liên tục, không đăng nhập trong một thời gian dài) và tạo ra một bản ghi cảnh báo trong bảng dropout_risk_assessments
+Các cảnh báo này sẽ được gửi đến giảng viên qua email hoặc thông báo trong ứng dụng, giúp họ chủ động liên hệ và hỗ trợ học viên kịp thời.
+Học viên cũng có thể xem các báo cáo về tiến độ cá nhân, bao gồm biểu đồ thời gian học, điểm trung bình và tỷ lệ hoàn thành khóa học trên Dashboard, giúp họ có cái nhìn rõ ràng về chặng đường học tập của mình.
+Bên cạnh đó, các mô hình học máy sẽ được sử dụng để nhận diện các dấu hiệu thái độ và mức độ chuyên cần của người học, từ đó giúp giảng viên và hệ thống có thể can thiệp kịp thời khi phát hiện ra những dấu hiệu mất tập trung hoặc nguy cơ bỏ học.
+3.3 Thiết kế và Triển khai Các Module AI Cốt lõi
+Để hiện thực hóa khả năng học tập thông minh, hệ thống được xây dựng trên một bộ các module AI cốt lõi, tập trung vào việc phân tích dữ liệu, đưa ra gợi ý và theo dõi tiến trình học tập một cách hiệu quả. Các module này được thiết kế theo kiến trúc microservices, đảm bảo tính độc lập và dễ dàng nâng cấp.
+
+
+3.3.3. Module AI Phân tích & Gợi ý
+Module này là cầu nối giữa các mô hình AI và người dùng, đảm bảo rằng các tính năng thông minh được triển khai hiệu quả và mang lại giá trị thực tế. Nó tập trung vào việc giám sát, tinh chỉnh và tích hợp các kết quả phân tích vào trải nghiệm học tập tổng thể
+	- Phân tích Dữ liệu và Dự đoán Hiệu suất:
+Dữ liệu đầu vào: Module này sử dụng dữ liệu từ nhiều nguồn khác nhau để xây dựng một bức tranh toàn diện về người học. Các nguồn dữ liệu chính bao gồm hồ sơ học tập ban đầu, lịch sử làm bài kiểm tra, các hành vi trong quá trình học và các dữ liệu liên quan khác. Cụ thể, các dữ liệu này được thu thập từ các bảng như learning_activities, assessment_attempts, và learning_profiles. 
+Mô hình dự đoán: Hệ thống sử dụng một mô hình hồi quy (Regression Model), được xây dựng dựa trên thuật toán RF, để dự đoán các chỉ số học tập cụ thể. Mô hình này có khả năng ước tính điểm số mà một học viên có thể đạt được trong bài kiểm tra tiếp theo hoặc tổng thời gian cần thiết để hoàn thành một khóa học. Kết quả dự đoán được lưu trữ trong bảng performance_predictions, giúp giảng viên có cái nhìn định lượng về tiềm năng của học viên.
+Cảnh báo sớm: Bên cạnh việc dự đoán điểm số, module còn bao gồm một mô hình phân loại (Classification Model) được đào tạo để nhận diện các dấu hiệu rủi ro. Nếu học viên có xu hướng học tập giảm sút hoặc các hành vi cho thấy sự thiếu chuyên cần, hệ thống sẽ tự động tạo một cảnh báo sớm. Cảnh báo này sẽ được lưu vào bảng dropout_risk_assessments và gửi đến giảng viên để họ có thể can thiệp kịp thời.
+	- Tích hợp phản hồi vào Giao diện Người dùng:
+Dashboard cá nhân hóa: Kết quả từ các module AI được tích hợp trực tiếp vào Dashboard của học viên và giảng viên. Học viên có thể thấy các gợi ý lộ trình học tập, các bài tập cần ôn lại và tiến độ học tập của mình
+Hệ thống Cảnh báo: Từ các dự đoán từ mô hình trả về dropout_risk_assessments và performance_predictions được hiển thị dưới dạng cảnh báo trực quan trên Dashboard của giảng viên, giúp họ dễ dàng nhận diện và can thiệp sớm đối với những học viên có nguy cơ.
+
+Lộ trình Học tập Thích ứng: Hệ thống tự động điều chỉnh nội dung và độ khó của bài học dựa trên kết quả phân tích của AI. Nếu học viên có tiến bộ, AI sẽ tăng độ khó hoặc giới thiệu các chủ đề nâng cao. Ngược lại, nếu học viên gặp khó khăn, AI sẽ đề xuất tài liệu bổ trợ hoặc giảm độ khó của bài học.
+-  Gợi ý Cá nhân hóa:
+
+Hình 3. 5: Sơ đồ học tập cá nhân hóa
+Tạo Lộ trình Học tập: Dựa trên kết quả phân tích và dự đoán, module này sẽ tạo ra một lộ trình học tập được cá nhân hóa hoàn toàn. Lộ trình này không chỉ bao gồm danh sách các bài học mà còn đề xuất các phương pháp học tối ưu và thời gian học hợp lý cho từng học viên
+Gợi ý Nội dung Động: Trong quá trình học, nếu hệ thống phát hiện học viên đang gặp khó khăn với một khái niệm cụ thể (ví dụ: tua lại video nhiều lần), nó sẽ ngay lập tức đề xuất tài liệu bổ sung hoặc các bài tập củng cố liên quan . Ngược lại, nếu học viên thể hiện năng lực vượt trội, hệ thống sẽ gợi ý nội dung nâng cao để giữ chân và tạo thách thức mới
+
+Gợi ý Tương tác: Module cũng đề xuất các hoạt động tương tác, ví dụ như tham gia một nhóm học tập với những người có cùng trình độ hoặc đặt lịch với gia sư AI để giải đáp các thắc mắc phức tạp. Tất cả các gợi ý này được lưu trữ trong bảng ai_recommendations để theo dõi và đánh giá hiệu quả
+3.4. API và Triển khai
+Phần này sẽ đi sâu vào cách các module AI được hiện thực hóa và tích hợp vào hệ thống thông qua các API, đảm bảo rằng các tính năng thông minh có thể được truy cập và sử dụng một cách linh hoạt.
+3.4.1. Cấu trúc API chính
+	Các module AI được đóng gói thành một dịch vụ backend độc lập, giao tiếp với hệ thống chính (Frontend và các microservices khác) thông qua các endpoint API RESTful. Điều này giúp hệ thống trở nên module hóa, cho phép các module AI được phát triển và triển khai một cách độc lập.
+/api/recommend: Endpoint này được sử dụng để đề xuất lộ trình học tập ban đầu cho người dùng mới. Dữ liệu đầu vào là kết quả của bài kiểm tra đầu vào (onboarding quiz), và hệ thống sẽ phân tích để đưa ra một chiến lược học tập phù hợp (strategy) cùng với các bài học được đề xuất (recommendations).
+/api/recommend-lessons: Endpoint này tương tự như /api/recommend nhưng được sử dụng để đề xuất các bài học tiếp theo dựa trên hiệu suất của học viên trong một bài kiểm tra cụ thể (assessment_attemp_id).
+/api/predict-attitude: Endpoint này nhận vào user_id và trả về kết quả dự đoán về thái độ học tập của học viên, chẳng hạn như "chăm chỉ," "lười biếng," hay "mất tập trung". Dự đoán này được thực hiện bởi mô hình RandomForestLearninAttube và kèm theo một lý do giải thích.
+/api/aitrack: Đây là endpoint chịu trách nhiệm thu thập và phân tích dữ liệu toàn diện của học viên để đưa ra dự đoán về hiệu suất. Nó trả về các thông tin như mức độ hiệu suất học tập, điểm số dự đoán và xu hướng học tập (ví dụ: "giảm," "ổn định," hoặc "tăng").
+/api/models/retrain: Endpoint này cho phép quản trị viên kích hoạt quá trình huấn luyện lại tất cả các mô hình AI trong hệ thống. Việc này đảm bảo rằng các mô hình luôn được cập nhật với dữ liệu mới nhất để duy trì độ chính xác.
+
+
+3.4.2. Quy trình triển khai và tích hợp
+	Đóng gói Module AI: Toàn bộ logic của các mô hình AI và các thuật toán tiền xử lý được đóng gói trong một ứng dụng Python sử dụng framework Flask.
+Khởi tạo Mô hình: Khi ứng dụng khởi động, các mô hình AI đã được huấn luyện sẵn sẽ được nạp từ file (.joblib). Nếu các file này không tồn tại hoặc mô hình chưa được huấn luyện, hệ thống sẽ tự động thực hiện quá trình huấn luyện lại từ đầu.
+Tích hợp API: Các endpoint được tạo trong Flask sẽ hoạt động như cầu nối, nhận yêu cầu HTTP từ các dịch vụ khác và trả về kết quả dự đoán hoặc gợi ý.
+Triển khai Độc lập: Dịch vụ AI này có thể được triển khai độc lập trên một máy chủ riêng biệt, cho phép nó xử lý các tác vụ tính toán nặng mà không ảnh hưởng đến hiệu suất của các microservice khác. Việc này cũng cho phép mở rộng quy mô (scale) dịch vụ AI một cách độc lập khi cần.
+
+
+CHƯƠNG 4: TRIỂN KHAI ỨNG DỤNG
+4.1 Mô hình đánh giá đầu vào
+4.1.1 Dữ liệu đầu vào.
+Dữ liệu đầu vào cho mô hình đánh giá năng lực ban đầu là nền tảng cốt lõi, là điểm tiếp xúc dữ liệu đầu tiên và quan trọng nhất giữa người học và hệ thống AI. Dữ liệu này đóng vai trò là nguyên liệu thô để hệ thống xây dựng "hồ sơ năng lực" ban đầu, từ đó khởi tạo một lộ trình học tập cá nhân hóa. Quá trình thu thập được thực hiện ngay sau khi người học hoàn thành bài kiểm tra đánh giá năng lực trên giao diện người dùng.
+Để đảm bảo tính nhất quán và khả năng tích hợp, dữ liệu được chuẩn hóa và gửi từ client lên backend server thông qua một yêu cầu HTTP POST tới API endpoint /api/recommend. Toàn bộ thông tin được đóng gói trong một đối tượng JSON (JavaScript Object Notation) duy nhất. Cấu trúc này được thiết kế để vừa đảm bảo tính linh hoạt, vừa dễ dàng cho việc phân tích và mở rộng sau này. Đối tượng JSON này chứa một thuộc tính chính là "data", có giá trị là một mảng (array). Mỗi phần tử trong mảng này là một đối tượng riêng, đại diện cho câu trả lời của người dùng cho một câu hỏi cụ thể trong bài kiểm tra.
+Mỗi đối tượng câu trả lời bao gồm hai trường dữ liệu thiết yếu, mang ý nghĩa quan trọng trong việc phân tích:
+- questionId (String):
+Mô tả: Một chuỗi ký tự hoạt động như một mã định danh duy nhất cho từng câu hỏi trong toàn bộ hệ thống.
+Vai trò và Tầm quan trọng: Trường questionId là một khóa tham chiếu (foreign key) cho phép hệ thống thực hiện các truy vấn phức tạp đến cơ sở dữ liệu để liên kết và lấy về các thông tin ngữ cảnh của câu hỏi. Điều này bao gồm việc xác định nội dung, độ khó (difficulty), và khóa học (course) mà câu hỏi đó thuộc về. Dựa vào đó, AI có thể khoanh vùng chính xác những lĩnh vực kiến thức mà người học còn yếu hoặc đã nắm vững
+	- answer (Boolean):
+Mô tả: Một giá trị luận lý (boolean) nhận giá trị true nếu người dùng trả lời đúng và false nếu trả lời sai
+Vai trò và Tầm quan trọng: Đây là chỉ số trực tiếp và cốt lõi nhất để đo lường hiệu suất của người học. Hệ thống sử dụng giá trị này để tính toán tổng số câu trả lời đúng và sai, thống kê tỷ lệ trả lời đúng trên từng cấp độ khó, và xác định các khóa học hoặc chủ đề có tỷ lệ sai cao để ưu tiên gợi ý trong lộ trình học tập
+
+Ví dụ minh họa luồng dữ liệu:
+
+Hình 4. 1: Ví dụ về dữ liệu đầu vào
+Sau khi nhận được yêu cầu chứa dữ liệu này tại endpoint /api/recommend, backend sẽ chuyển toàn bộ đối tượng JSON này làm đối số cho hàm analyze_user_begining trong lớp TestAnalyzer. Tại đây, dữ liệu thô sẽ được xử lý, kết hợp với thông tin từ cơ sở dữ liệu để biến đổi thành một bản phân tích chi tiết về điểm mạnh, điểm yếu của người học, tạo tiền đề vững chắc cho các bước gợi ý và cá nhân hóa của hệ thống AI.
+4.1.2 Xử lý
+	Sau khi nhận được dữ liệu đầu vào từ client, hệ thống sẽ chuyển toàn bộ đối tượng JSON này đến hàm analyze_user_begining trong lớp TestAnalyzer để bắt đầu quá trình xử lý. Mục tiêu của giai đoạn này là chuyển đổi dữ liệu thô về các câu trả lời đúng/sai thành một bản phân tích sâu sắc về năng lực hiện tại của người học, làm cơ sở cho việc xây dựng lộ trình học tập ban đầu.
+	
+Quá trình xử lý bắt đầu bằng việc khởi tạo các cấu trúc dữ liệu để lưu trữ thông tin phân tích, bao gồm course_stats để theo dõi hiệu suất theo từng khóa học và difficulty_stats để thống kê hiệu suất theo từng cấp độ khó ('easy', 'medium', 'hard'). Hệ thống sau đó duyệt qua từng câu trả lời trong dữ liệu đầu vào. Với mỗi questionId, một truy vấn SQL được thực hiện để lấy thông tin ngữ cảnh quan trọng như khóa học, cấp độ của khóa học và độ khó của câu hỏi.
+Trong quá trình duyệt qua từng câu trả lời, hệ thống thực hiện các phép tính và cập nhật các cấu trúc dữ liệu đã khởi tạo.
+Ghi nhận lỗi sai: Nếu câu trả lời là sai, hệ thống sẽ ghi nhận một lỗi sai cho khóa học tương ứng. Các lỗi này được phân loại chi tiết theo độ khó của câu hỏi
+Tính toán hiệu suất theo độ khó: Cấu trúc difficulty_stats được cập nhật liên tục để ghi nhận tổng số câu hỏi và số câu trả lời đúng cho mỗi cấp độ khó. Điều này giúp hệ thống có cái nhìn tổng quan về khả năng của người học ở từng mức độ kiến thức.
+	Sau khi xử lý tất cả câu hỏi, hệ thống sẽ lọc ra các khóa học mà người dùng có ít nhất một câu trả lời sai, coi đó là "vùng kiến thức yếu" cần được củng cố.
+	Phân loại và sắp xếp: Các khóa học yếu được phân loại vào ba danh sách riêng biệt:
+Các khóa học cấp độ beginner được ưu tiên hàng đầu nếu có nhiều câu hỏi dễ bị trả lời sai nhất, nhằm củng cố kiến thức nền tảng
+Các khóa học ở cấp độ intermediate và advanced được sắp xếp dựa trên tổng số câu trả lời sai
+	Xây dựng lộ trình: Một lộ trình học tập đề xuất (learning_path) hoàn chỉnh được hình thành bằng cách kết hợp các danh sách đã sắp xếp theo thứ tự ưu tiên: Beginner → Intermediate → Advanced.
+	Cuối cùng, hệ thống tính toán các chỉ số tổng hợp như tỷ lệ chính xác toàn bài và hiệu suất chi tiết trên từng độ khó. Kết quả phân tích được định dạng lại thành một cấu trúc chuẩn hóa, bao gồm các chủ đề yếu và các gợi ý học tập cụ thể. Dữ liệu này sẽ được các module khác như LearningStrategyAI, sử dụng làm đầu vào cho các bước xử lý chuyên sâu tiếp theo.
+4.1.3 Kết quả
+	Sau khi hoàn tất quá trình xử lý, hàm analyze_user_begining trả về một đối tượng JSON duy nhất. Kết quả này không chỉ đơn thuần là một danh sách gợi ý, mà là một bản phân tích dữ liệu toàn diện về năng lực của người học tại thời điểm kiểm tra. Dữ liệu này có hai mục đích chính: cung cấp phản hồi tức thì cho người học và làm đầu vào cho mô hình AI ở các bước tiếp theo.
+	Đối tượng kết quả được thiết kế với cấu trúc rõ ràng và dễ hiểu, bao gồm các trường dữ liệu quan trọng:
+	learning_path (Mảng): Một danh sách các đối tượng, mỗi đối tượng đại diện cho một khóa học mà người học cần ôn tập. Danh sách này đã được sắp xếp theo thứ tự ưu tiên, bắt đầu từ những kiến thức nền tảng và cấp bách nhất.
+overall_accuracy (Số): Một số thực từ 0 đến 1, đại diện cho tỷ lệ phần trăm câu trả lời đúng trên tổng số câu hỏi của bài kiểm tra. Đây là chỉ số tổng quan nhất để đánh giá nhanh năng lực của người học.
+difficulty_performance (Đối tượng): Chứa ba đối tượng con tương ứng với ba cấp độ khó: easy, medium, và hard. Mỗi đối tượng con lại chứa các thông tin chi tiết về hiệu suất ở cấp độ đó, bao gồm accuracy (tỷ lệ chính xác), correct (số câu đúng), và total (tổng số câu). Dữ liệu này giúp hệ thống AI và người học hiểu rõ vấn đề không chỉ nằm ở chủ đề nào, mà còn ở cấp độ kiến thức nào.
+weak_categories (Mảng): Một danh sách các đối tượng đại diện cho một "chủ đề yếu" (tương ứng với một khóa học có câu trả lời sai). Nó chứa các thông tin như tên khóa học, tỷ lệ đúng trong chủ đề đó, và mức độ ưu tiên.
+strategy_criteria (Đối tượng): Chứa các gợi ý chiến lược học tập ở cấp độ cao, được suy luận trực tiếp từ các chỉ số hiệu suất. Nó bao gồm các trường như focus (lĩnh vực cần tập trung), difficulty (độ khó cần ưu tiên), và recommended_approach (phương pháp học được đề xuất). Đây là kết quả phân tích sơ bộ, làm tiền đề cho mô hình LearningStrategyAI đưa ra quyết định cuối cùng.
+
+
+
+
+Ví dụ về kết quả trả về (rút gọn):
+
+Hình 4. 2: Kết quả phản hồi
+Kết quả chi tiết này sau đó được API /api/recommend trả về cho client. Các thành phần của nó sẽ được sử dụng để xây dựng giao diện kết quả cho người dùng và đồng thời được đưa vào mô hình dự đoán chiến lược học tập ở giai đoạn sau.
+4.2 Mô hình đánh giá bài kiểm tra
+4.2.1 Dữ liệu đầu vào.
+	Để khởi động quá trình phân tích một bài kiểm tra cụ thể, hệ thống không nhận dữ liệu thô về từng câu trả lời từ client như ở mô hình đánh giá đầu vào. Thay vào đó, quá trình này hoạt động dựa trên dữ liệu đã được người học nộp và hệ thống đã ghi lại trong cơ sở dữ liệu. Dữ liệu đầu vào cần thiết cho hàm analyze_user_performance là hai mã định danh (ID) được gửi đến API endpoint /api/recommend-lessons. Hai mã này đóng vai trò là "chìa khóa" để truy xuất đúng thông tin cần phân tích.
+	Dữ liệu đầu vào cho quá trình này là một đối tượng JSON nhỏ gọn, được gửi qua yêu cầu HTTP POST. Đối tượng này chỉ chứa hai trường dữ liệu quan trọng, cho phép hệ thống truy cập vào kho dữ liệu khổng lồ một cách hiệu quả.
+- user_id (String):
+Mô tả: Đây là mã định danh duy nhất của người học đã thực hiện bài kiểm tra.
+Vai trò: Giúp hệ thống xác định đúng đối tượng người học để thực hiện truy vấn và trả về kết quả phân tích dành riêng cho họ.
+- assessment_attemp_id (String):
+Mô tả: Đây là mã định danh duy nhất cho lần làm bài kiểm tra cụ thể đó.
+Vai trò: Đây là khóa chính để hàm analyze_user_performance truy vấn đến bảng assessment_attempts trong cơ sở dữ liệu. Từ bản ghi này, hàm có thể lấy ra toàn bộ thông tin chi tiết của lần làm bài đó, bao gồm:
+Một chuỗi JSON chứa tất cả các câu trả lời mà người học đã chọn.
+Điểm số cuối cùng (score) và điểm tối đa (maxScore).
+Thời gian hoàn thành (timeTaken).
+Các thông tin liên quan khác để liên kết đến bài học và khóa học.
+	Tóm lại, dữ liệu đầu vào cho quá trình xử lý không phải là nội dung chi tiết của bài làm, mà là hai mã định danh (user_id và assessment_attemp_id). Từ hai mã này, hàm analyze_user_performance có thể truy xuất tất cả dữ liệu cần thiết từ cơ sở dữ liệu để bắt đầu quá trình phân tích sâu.
+	Ví dụ về cấu trúc JSON của yêu cầu gửi đến API:
+Hình 4. 3: Dữ liệu đầu vào của mô hình gợi ý theo bài kiểm tra
+4.2.2 Xử lý
+	Khi nhận được user_id và assessment_attemp_id, hàm analyze_user_performance sẽ khởi động một quy trình phân tích sâu và đa chiều. Mục tiêu của quy trình này không chỉ là chấm điểm, mà là để "giải phẫu" kết quả bài làm, tìm ra những lỗ hổng kiến thức cụ thể và đưa ra những gợi ý ôn tập có tính chính xác cao.
+Dựa vào user_id và assessment_attemp_id, hệ thống thực hiện một truy vấn SQL phức tạp để lấy về bản ghi của lượt làm bài. Truy vấn này không chỉ lấy thông tin từ bảng assessment_attempts mà còn liên kết (JOIN) với các bảng khác như assessments, lessons, courses, categories để thu thập một bức tranh toàn cảnh về bài làm. Dữ liệu này bao gồm điểm số, thời gian làm bài, và chuỗi JSON chi tiết các câu trả lời của người học. Đồng thời, hệ thống cũng truy vấn để lấy tất cả các câu hỏi thuộc bài kiểm tra đó, bao gồm đáp án đúng, độ khó và các thông tin liên quan, và lưu chúng vào một cấu trúc tra cứu để việc so sánh đáp án diễn ra nhanh chóng
+	Đây là bước xử lý cốt lõi. Hệ thống duyệt qua từng câu trả lời của người học và so sánh với đáp án đúng đã được truy xuất. Một cấu trúc dữ liệu lesson_errors được sử dụng để tổng hợp lỗi sai ở cấp độ bài học. Nếu một câu trả lời được xác định là sai, hệ thống sẽ tìm ra bài học mà câu hỏi đó thuộc về, tăng biến đếm error_count cho bài học tương ứng, ghi nhận độ khó của câu hỏi sai, và lưu lại tiêu đề của câu hỏi đó. Việc tổng hợp lỗi sai theo từng bài học là một cải tiến quan trọng, giúp hệ thống xác định chính xác bài học nào cần được ôn tập thay vì chỉ gợi ý chung chung cả một khóa học lớn.
+Sau khi phân tích hết các câu trả lời, hệ thống sẽ xử lý cấu trúc lesson_errors. Với mỗi bài học có lỗi sai, hệ thống tạo ra một "gói gợi ý" chứa các thông tin hữu ích, bao gồm :
+Thông tin định danh bài học (lesson_id, lesson_title, lesson_slug)
+Thống kê chi tiết: error_count (số câu sai), correct_count (số câu đúng), lesson_accuracy (tỷ lệ đúng của riêng bài học đó).
+Mức độ ưu tiên ( priority): Được tự động gán các nhãn như 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW' dựa trên số lượng lỗi sai. Bài học càng có nhiều lỗi sai thì độ ưu tiên càng cao
+Danh sách câu hỏi sai (questions_wrong): Cung cấp danh sách tối đa 5 câu hỏi cụ thể bị trả lời sai, giúp người học tập trung vào đúng vấn đề cần giải quyết.
+	Toàn bộ các "gói gợi ý" này được đưa vào một danh sách lesson_recommendations và sắp xếp theo thứ tự ưu tiên giảm dần.
+	Ngoài việc phân tích theo bài học, hệ thống cũng thực hiện các phân tích bổ sung để có cái nhìn sâu hơn:
+Phân tích theo độ khó: Tính toán tỷ lệ trả lời đúng trên từng cấp độ khó (easy, medium, hard) cho toàn bộ bài kiểm tra.
+Phân tích theo chủ đề (Category): Dựa trên điểm số, hệ thống phân loại hiệu suất của người học trong từng chủ đề kiến thức là "yếu" (weak_categories) nếu tỷ lệ đúng dưới 50%, hoặc "cần cải thiện" (avd_categories) nếu tỷ lệ đúng từ 50% đến dưới 100%.
+Cuối cùng, tất cả các kết quả phân tích trên (gợi ý bài học, hiệu suất theo độ khó, các chủ đề yếu...) được tập hợp lại thành một đối tượng JSON duy nhất và trả về cho API endpoint
+4.2.3 Kết quả
+	Sau khi hoàn tất quá trình phân tích bài kiểm tra, hệ thống sẽ trả về một đối tượng JSON có cấu trúc phức tạp và giàu thông tin, được gọi là báo cáo phân tích hiệu suất cá nhân. Báo cáo này không chỉ cung cấp một danh sách gợi ý mà còn là một bản phân tích dữ liệu toàn diện về năng lực của người học, được thiết kế để phục vụ hai mục đích chính: cung cấp phản hồi chi tiết và hữu ích cho người học, đồng thời làm đầu vào đã qua xử lý cho các mô hình AI ở tầng cao hơn
+Báo cáo được trả về bởi API endpoint /api/recommend-lessons với một cấu trúc rõ ràng, bao gồm các trường dữ liệu quan trọng sau:
+lesson_recommendations: Đây là một mảng chứa các đối tượng đại diện cho các bài học cần được ôn tập. Các bài học này được sắp xếp theo mức độ ưu tiên giảm dần, dựa trên số lượng câu trả lời sai. Mỗi đối tượng trong mảng cung cấp thông tin chi tiết như lesson_id, lesson_title, error_count, và một nhãn priority ('CRITICAL', 'HIGH', 'MEDIUM').
+difficulty_performance: Một đối tượng chứa phân tích hiệu suất chi tiết theo từng cấp độ khó ('easy', 'medium', 'hard'), bao gồm tỷ lệ chính xác và số câu đúng/tổng số câu.
+weak_categories: Một danh sách các chủ đề kiến thức mà người học thể hiện sự yếu kém, thường được xác định khi tỷ lệ trả lời đúng dưới một ngưỡng nhất định.
+overall_performance: Bao gồm các chỉ số tổng quan về bài làm như điểm số, thời gian hoàn thành và tỷ lệ chính xác toàn bài
+	Dưới đây là ví dụ minh họa về cấu trúc dữ liệu kết quả:
+
+Hình 4. 4: Kết quả gợi ý theo bài kiểm tra
+	
+4.3 Mô hình đánh giá thái độ học
+4.3.1 Dữ liệu đầu vào.
+Để đánh giá thái độ học tập của người dùng, hệ thống AI không phân tích một sự kiện đơn lẻ như một bài kiểm tra, mà thay vào đó, nó phân tích các mẫu hành vi dài hạn. Vì vậy, dữ liệu đầu vào cho mô hình này chỉ đơn giản là mã định danh của người dùng.
+Quá trình phân tích được bắt đầu thông qua một yêu cầu HTTP POST đến endpoint API /api/predict-attitude. Yêu cầu này chứa một trường dữ liệu duy nhất:
+user_id (String): Mã định danh duy nhất của người học cần được đánh giá. Nó đóng vai trò là "chìa khóa" để module AI truy vấn và tổng hợp toàn bộ lịch sử hoạt động của người học từ cơ sở dữ liệu
+	Một ví dụ về cấu trúc JSON của yêu cầu có thể trông như thế này:
+Hình 4. 5: Dữ liệu đầu vào của mô hình nhận diện thái độ
+	Sau khi nhận được user_id, module AI sẽ tự động thực hiện các truy vấn phức tạp để thu thập một tập dữ liệu toàn diện về hành vi của người học, bao gồm:
+	Lịch sử làm bài kiểm tra: Điểm số, thời gian hoàn thành, và tần suất làm bài từ bảng assessment_attempts
+Tiến độ học tập: Dữ liệu về các bài học đã hoàn thành, thời gian dành cho mỗi bài học từ bảng lesson_progress
+Hoạt động tương tác: Các sự kiện chi tiết như tần suất xem video, số lần tạm dừng/tua lại, hoạt động trên diễn đàn từ bảng learning_activities
+Toàn bộ dữ liệu lịch sử này sau đó được chuyển đổi thành một vector đặc trưng duy nhất, làm đầu vào cho mô hình phân loại thái độ ở bước xử lý tiếp theo.
+4.3.2 Xử lý
+	Quá trình xử lý của mô hình đánh giá thái độ học tập là một quy trình gồm nhiều bước, được thiết kế để chuyển đổi dữ liệu hành vi thô thành một dự đoán có ý nghĩa và có thể diễn giải được.
+	Sau khi thu thập toàn bộ dữ liệu lịch sử liên quan đến user_id, hệ thống sẽ tiến hành kỹ thuật trích xuất đặc trưng để tạo ra một vector đại diện cho hành vi của người học. Các đặc trưng này được tính toán và tổng hợp từ nhiều nguồn dữ liệu khác nhau, ví dụ:
+avg_score: Điểm số trung bình trên tất cả các bài kiểm tra đã làm
+completion_rate: Tỷ lệ phần trăm các bài học đã hoàn thành so với tổng số bài học trong các khóa đã đăng ký.
+login_frequency: Số lần đăng nhập trung bình mỗi tuần.
+session_duration_avg: Thời gian trung bình của mỗi phiên học
+procrastination_index: Chỉ số đo lường sự trì hoãn (ví dụ: thời gian từ lúc bài tập được giao đến lúc hoàn thành).
+	Vector đặc trưng vừa được tạo ra có các giá trị ở những thang đo rất khác nhau. Để đảm bảo mỗi đặc trưng đóng góp một cách công bằng vào mô hình, hệ thống sử dụng StandardScaler từ thư viện Scikit-learn để chuẩn hóa dữ liệu, đưa tất cả các giá trị về cùng một phân phối chuẩn (trung bình 0, độ lệch chuẩn 1).
+	Vector đặc trưng đã được chuẩn hóa sau đó được đưa vào mô hình RF Classifier đã được huấn luyện trước đó (tải từ file attitude_model.joblib). Mô hình sẽ phân tích vector này và đưa ra một dự đoán về thái độ của người học, phân loại họ vào một trong các nhãn đã được định nghĩa trước như: "Chăm chỉ," "Bình thường," hoặc "Cần chú ý"
+Để kết quả không chỉ là một nhãn vô tri, hệ thống phân tích ngược lại các đặc trưng có ảnh hưởng lớn nhất đến quyết định của mô hình. Dựa vào đó, một chuỗi giải thích được tạo ra một cách tự động. Ví dụ, nếu dự đoán là "Chăm chỉ," lý do có thể là "Học viên có tần suất đăng nhập cao và tỷ lệ hoàn thành bài học tốt." Điều này giúp kết quả trở nên minh bạch và dễ hiểu hơn đối với giảng viên
+4.3.3 Kết quả
+	Sau khi hoàn tất quá trình xử lý, API endpoint /api/predict-attitude sẽ trả về một đối tượng JSON cô đọng. Kết quả này được thiết kế để cung cấp cho giảng viên một đánh giá nhanh chóng và dễ hiểu về thái độ học tập của sinh viên, giúp họ có thể đưa ra những can thiệp kịp thời.
+	Đối tượng JSON trả về bao gồm các trường sau:
+attitude (String): Nhãn dự đoán về thái độ của người học. Các giá trị có thể là "Chăm chỉ", "Bình thường", "Cần chú ý".
+reason (String): Một chuỗi văn bản giải thích ngắn gọn cho kết quả dự đoán, được tạo ra dựa trên các đặc trưng nổi bật nhất. Ví dụ: "Điểm số trung bình cao và tiến độ ổn định."
+confidence_score (Float): Một số thực từ 0 đến 1, thể hiện mức độ tự tin của mô hình đối với dự đoán đã đưa ra. Điểm số càng gần 1, độ chắc chắn của mô hình càng cao.
+Ví dụ về kết quả trả về:
+- Trường hợp 1: Học viên có biểu hiện tích cự:
+
+Hình 4. 6: Hình ảnh kết quả của học sinh tích cực
+	- Trường hợp 2: Học viên có biểu hiện cần quan tâm:
+
+Hình 4. 7: Hình ảnh kết quả học sinh yếu
+Những kết quả này sẽ được tích hợp vào giao diện quản lý của giảng viên, thường được hiển thị dưới dạng các huy hiệu hoặc cảnh báo bên cạnh tên của sinh viên, cho phép giảng viên nhanh chóng nắm bắt tình hình chung của lớp học.
+4.4 Mô hình dự đoán xu hướng điểm
+4.4.1 Dữ liệu đầu vào.
+	Tương tự như mô hình đánh giá thái độ, mô hình AITrack chịu trách nhiệm dự đoán xu hướng điểm và hiệu suất tổng thể, hoạt động dựa trên việc phân tích toàn bộ lịch sử học tập của một cá nhân theo thời gian. Quá trình này không yêu cầu client gửi dữ liệu chi tiết, mà chỉ cần một mã định danh duy nhất để khởi tạo.
+	Quá trình phân tích bắt đầu khi có một yêu cầu HTTP POST được gửi đến API endpoint /api/aitrack. Yêu cầu này chỉ cần chứa một trường dữ liệu:
+	user_id (String): Mã định danh duy nhất của người học cần được theo dõi và dự đoán. Trường này hoạt động như một khóa chính để module AI truy vấn và tổng hợp tất cả các điểm dữ liệu liên quan đến hiệu suất của người học từ cơ sở dữ liệu.
+	Một ví dụ về cấu trúc JSON của yêu cầu có thể là:
+	-
+Hình 4. 8: Dữ liệu vào của mô hình dự đoán xu hướng điểm
+Dựa trên user_id, hệ thống sẽ thu thập một chuỗi dữ liệu theo thời gian (time-series data), đặc biệt tập trung vào:
+Lịch sử điểm số: Một mảng các điểm số từ tất cả các bài kiểm tra đã làm, được sắp xếp theo thứ tự thời gian. Đây là nguồn dữ liệu quan trọng nhất để mô hình nhận diện xu hướng (tăng, giảm, hay ổn định).
+Tần suất và hiệu suất làm bài: Tần suất học viên làm bài kiểm tra và tỷ lệ chính xác của mỗi lần.
+Tiến độ qua các khóa học: Tốc độ hoàn thành các bài học và các khóa học.
+Tập dữ liệu lịch sử này, đặc biệt là chuỗi điểm số, sẽ là đầu vào cốt lõi cho mô hình dự đoán ở bước xử lý tiếp theo, cho phép nó không chỉ đánh giá hiệu suất hiện tại mà còn dự báo được quỹ đạo phát triển trong tương lai của người học.
+4.4.2 Xử lý
+	Mô hình AITrack, chịu trách nhiệm dự đoán xu hướng điểm và hiệu suất tổng thể, hoạt động dựa trên một quy trình phân tích phức tạp, kết hợp cả hai kỹ thuật hồi quy (regression) và phân loại (classification) để đưa ra một cái nhìn toàn diện về hiệu suất của người học.
+	Đây là bước cốt lõi, nơi dữ liệu lịch sử được chuyển đổi thành các đặc trưng có khả năng mô tả xu hướng. Hệ thống sẽ tính toán các chỉ số quan trọng từ chuỗi điểm số và các dữ liệu liên quan:
+score_trend_slope: Độ dốc của đường hồi quy tuyến tính đi qua chuỗi điểm số của người học theo thời gian. Đây là đặc trưng quan trọng nhất để xác định xu hướng: độ dốc dương nghĩa là tiến bộ, độ dốc âm nghĩa là sa sút.
+recent_performance: Điểm trung bình của 3-5 bài kiểm tra gần nhất để nắm bắt hiệu suất hiện tại.
+performance_volatility: Độ lệch chuẩn của các điểm số, dùng để đo lường sự ổn định trong kết quả học tập.
+learning_velocity: Tốc độ hoàn thành các bài học hoặc các bài kiểm tra, đo bằng số ngày trung bình giữa các hoạt động.
+Tương tự các mô hình khác, vector đặc trưng vừa được tạo sẽ được đưa qua StandardScaler để chuẩn hóa. Bước này đảm bảo tất cả các chỉ số đều có cùng một thang đo và trọng số khi đưa vào mô hình
+Vector đặc trưng đã chuẩn hóa được sử dụng đồng thời cho hai nhiệm vụ dự đoán khác nhau, có thể được thực hiện bởi hai mô hình riêng biệt hoặc một mô hình đa đầu ra (multi-output model) được tải từ file aitrack_model.joblib:
+Dự đoán Xu hướng (Phân loại): Một mô hình phân loại (Classifier) sẽ dự đoán xu hướng học tập chung của sinh viên. Kết quả là một trong ba nhãn: "Tăng trưởng," "Ổn định," hoặc "Suy giảm".
+Dự đoán Điểm số (Hồi quy): Một mô hình hồi quy (Regressor) sẽ dự đoán điểm số mà học viên có khả năng đạt được trong bài kiểm tra tiếp theo. Kết quả là một giá trị số cụ thể.
+Các kết quả từ hai mô hình trên được tổng hợp lại, cùng với các chỉ số hiệu suất hiện tại (ví dụ: điểm trung bình chung), để tạo thành một đối tượng kết quả hoàn chỉnh, sẵn sàng để trả về qua API.
+4.4.3 Kết quả
+	Kết quả cuối cùng từ mô hình AITrack là một đối tượng JSON tổng hợp, được trả về qua API endpoint /api/aitrack. Đối tượng này cung cấp một bức tranh đầy đủ về hiệu suất của người học, bao gồm trạng thái hiện tại, xu hướng trong quá khứ và dự báo cho tương lai.
+	Đối tượng JSON trả về bao gồm các trường sau:
+Performance_level (String): Nhãn đánh giá chung về năng lực hiện tại của học viên, dựa trên điểm số trung bình tổng thể. Ví dụ: "Xuất sắc", "Tốt", "Trung bình", "Cần cải thiện".
+Predicted_score (Float): Điểm số dự kiến cho bài kiểm tra tiếp theo, là kết quả từ mô hình hồi quy.
+Trend (String): Xu hướng hiệu suất được dự đoán bởi mô hình phân loại. Các giá trị có thể là "Tăng trưởng", "Ổn định", hoặc "Suy giảm".
+Current_avg_score (Float): Điểm số trung bình hiện tại của học viên, được cung cấp để làm thông tin tham chiếu.
+Message (String): Một thông điệp được tạo tự động để tóm tắt các kết quả phân tích. Ví dụ: "Học viên đang cho thấy sự tiến bộ ổn định.
+
+Ví dụ về kết quả trả về:
+Trường hợp 1: Học viên xuất sắc, đang tiến bộ
+
+Hình 4. 9: Kết quả trả về của dự đoán xu hướng điểm tăng
+Trường hợp 2: Học viên có hiệu suất trung bình nhưng đang có dấu hiệu đi xuống
+
+Hình 4. 10: kết quả trả về của dự đoán xu hướng điểm giảm
+Dữ liệu tổng hợp này là nguồn lực quý giá cho cả học viên và giảng viên. Nó không chỉ giúp học viên tự nhận thức về tiến trình của mình mà còn cung cấp cho giảng viên những thông tin cần thiết để đưa ra lời khuyên, sự động viên hoặc các biện pháp hỗ trợ được cá nhân hóa và dựa trên dữ liệu xác thực.
+
+
+CHƯƠNG 5: KẾT LUẬN VÀ ĐÁNH GIÁ
+5.1 Kết luận
+	Khóa luận này đã nghiên cứu và phát triển thành công một hệ thống học tập thông minh ứng dụng trí tuệ nhân tạo, giải quyết các thách thức cốt lõi của các nền tảng E-learning truyền thống. Bằng việc kết hợp các thuật toán học máy, đặc biệt là Random Forest, hệ thống đã chuyển đổi từ một kho lưu trữ nội dung thụ động thành một cố vấn ảo chủ động, có khả năng cá nhân hóa trải nghiệm học tập và theo dõi sát sao tiến trình của từng người học.
+	Cụ thể, các mục tiêu đề ra đã được hoàn thành:
+Về mặt kiến trúc: Hệ thống được xây dựng trên kiến trúc microservices hiện đại, đảm bảo tính linh hoạt, khả năng mở rộng và dễ dàng bảo trì.
+Về mặt chức năng: Các module AI cốt lõi đã được thiết kế và triển khai hiệu quả để:
+Phân tích và gợi ý lộ trình: Hệ thống có thể phân tích hành vi học tập và đề xuất chiến lược học tập phù hợp, từ học lại kiến thức nền tảng đến chế độ thử thách nâng cao.
+Theo dõi và dự đoán: Các mô hình AI có khả năng dự đoán thái độ học tập và hiệu suất tương lai của học viên, đồng thời cung cấp các cảnh báo sớm cho giảng viên khi phát hiện rủi ro bỏ học.
+Về mặt công nghệ: Đã ứng dụng thành công ngôn ngữ Python cùng các thư viện mạnh mẽ như Scikit-learn, Pandas, NumPy và framework Flask để xây dựng bộ máy AI của hệ thống. Việc lưu trữ và tải mô hình thông qua file .joblib giúp tối ưu hóa quá trình triển khai và tái sử dụng
+	Sự thành công của đề tài đã chứng minh tiềm năng to lớn của việc ứng dụng AI trong lĩnh vực giáo dục số, mở ra một hướng đi mới để nâng cao chất lượng đào tạo và mang lại trải nghiệm học tập cá nhân hóa vượt trội cho người học.
+5.2 Ưu điểm
+	Hệ thống học tập thông minh ứng dụng AI mang lại nhiều ưu điểm vượt trội so với các nền tảng LMS truyền thống, giải quyết các hạn chế cố hữu của chúng.
+	Thay vì áp dụng mô hình "một kích cỡ cho tất cả" (one-size-fits-all) , hệ thống sử dụng trí tuệ nhân tạo để phân tích hành vi học tập của từng cá nhân. AI có thể xác định điểm mạnh, điểm yếu, sở thích và phong cách học của mỗi sinh viên. Từ đó, hệ thống đề xuất một lộ trình học tập được cá nhân hóa sâu sắc, có thể tự động điều chỉnh linh hoạt (Adaptive Learning) dựa trên tiến độ và hiệu suất thực tế của người học. Điều này giúp người học không còn cảm thấy nhàm chán với nội dung quá dễ hoặc nản lòng trước kiến thức quá khó, từ đó tăng hiệu quả tiếp thu và duy trì động lực.
+	Hệ thống tự động hóa nhiều công việc lặp đi lặp lại và tốn thời gian cho giảng viên như chấm bài, quản lý điểm số và theo dõi tiến độ chung của cả lớp. Bằng cách cung cấp các báo cáo phân tích chi tiết về hiệu suất của từng học viên, hệ thống giúp giảng viên sớm nhận biết những sinh viên đang gặp khó khăn và đưa ra các biện pháp can thiệp kịp thời. Điều này giải phóng thời gian quý báu để giảng viên tập trung vào các hoạt động chuyên môn sâu hơn như cố vấn, giải đáp thắc mắc phức tạp và thiết kế nội dung giảng dạy sáng tạo
+	Hệ thống cung cấp hỗ trợ tức thì 24/7 thông qua chatbot thông minh, giúp người học giải đáp thắc mắc ngay lập tức. Các thuật toán học máy được sử dụng để phân tích dữ liệu, dự đoán kết quả và đưa ra các gợi ý can thiệp kịp thời trước khi hiệu suất của sinh viên sụt giảm đáng kể. Điều này tạo ra một vòng lặp phản hồi liên tục, nơi mỗi hành động của người học đều góp phần cải thiện độ chính xác và hiệu quả của các mô hình AI. Hệ thống cũng cung cấp các công cụ tương tác đa dạng, bao gồm cả nền tảng lớp học trực tuyến và các công cụ cộng tác, để tái tạo trải nghiệm học tập năng động và tương tác cao như trong môi trường truyền thống.
+	Hệ thống được thiết kế theo kiến trúc microservices hiện đại, cho phép nó dễ dàng mở rộng để xử lý lượng dữ liệu khổng lồ và phục vụ hàng ngàn người dùng đồng thời mà không bị giảm hiệu suất. Các module AI hoạt động như các dịch vụ độc lập, có thể được phát triển và triển khai riêng biệt, giúp hệ thống linh hoạt và dễ bảo trì hơn. Điều này đặc biệt quan trọng trong bối cảnh nhu cầu học tập từ xa và học tập suốt đời (lifelong learning) ngày càng tăng cao, đòi hỏi các nền tảng giáo dục phải linh hoạt, dễ tiếp cận và có khả năng mở rộng
+5.3 Nhược điểm
+	Mặc dù hệ thống học tập thông minh ứng dụng AI mang lại nhiều ưu điểm, nhưng vẫn tồn tại một số nhược điểm và hạn chế cần được xem xét và cải thiện.
+	Chất lượng và số lượng dữ liệu: Hiệu quả của các mô hình AI, bao gồm cả Random Forest, phụ thuộc rất lớn vào chất lượng và số lượng dữ liệu huấn luyện. Nếu dữ liệu đầu vào không đủ lớn hoặc không đa dạng, mô hình có thể không học được các mẫu hành vi phức tạp của người học, dẫn đến kết quả dự đoán thiếu chính xác
+	Vấn đề học vẹt (Overfitting): Một cây quyết định đơn lẻ có xu hướng xây dựng các cấu trúc phức tạp để phù hợp với mọi điểm dữ liệu, kể cả nhiễu, dẫn đến khả năng khái quát hóa kém. Mặc dù thuật toán Random Forest được phát triển để khắc phục nhược điểm này bằng cách sử dụng nhiều cây và yếu tố ngẫu nhiên, nguy cơ overfitting vẫn có thể xảy ra nếu các tham số không được tối ưu hóa đúng cách.
+	
+Hạn chế trong xử lý dữ liệu tuần tự: Các mô hình hiện tại, chủ yếu dựa trên Random Forest, hoạt động hiệu quả với dữ liệu có cấu trúc nhưng có thể không tối ưu cho việc phân tích dữ liệu tuần tự, ví dụ như trình tự các hành động của người học theo thời gian. Điều này có thể làm giảm độ chính xác của các dự đoán về tiến trình học trong dài hạn.
+	- Tính toán nặng và tài nguyên: Các mô hình AI đòi hỏi sức mạnh tính toán lớn để huấn luyện và vận hành. Việc xử lý dữ liệu theo thời gian thực và đưa ra các gợi ý ngay lập tức có thể gây áp lực lên tài nguyên hệ thống, đặc biệt khi số lượng người dùng tăng cao.
+	- Bảo trì và cập nhật mô hình: Mô hình AI cần được huấn luyện lại định kỳ với dữ liệu mới để duy trì độ chính xác. Quy trình này đòi hỏi một hệ thống quản lý mô hình hiệu quả, nếu không sẽ tốn nhiều công sức và chi phí.
+	- Vấn đề về bảo mật và quyền riêng tư: Việc thu thập và phân tích dữ liệu chi tiết về hành vi học tập của người dùng đặt ra các thách thức lớn về bảo mật và quyền riêng tư. Hệ thống cần có các biện pháp mã hóa dữ liệu (at rest, in transit) và các tiêu chuẩn bảo mật nghiêm ngặt để bảo vệ thông tin cá nhân của học viên.
+	- Thiếu kinh nghiệm thực tiễn: Đây là lần đầu tiên phát triển một ứng dụng hoàn chỉnh từ đầu đến cuối, do đó vẫn còn thiếu kinh nghiệm trong việc quản lý dự án, tổ chức dữ liệu và viết báo cáo một cách chuyên nghiệp.
+	- Hiệu suất chưa tối ưu: Mặc dù đã cố gắng, hiệu suất của ứng dụng vẫn có thể chưa được tối ưu hóa đầy đủ cho mọi nền tảng và thiết bị di động, dẫn đến tình trạng giật lag hoặc thời gian phản hồi chậm trên một số thiết bị cũ hơn
+	- Tính năng quan trọng: Ứng dụng vẫn còn thiếu một số tính năng nâng cao như tích hợp thanh toán trực tuyến, quản lý tài khoản người dùng chi tiết và các tính năng cá nhân hóa chuyên sâu khác
+5.4 Tiềm năng và hướng phát triển trong tương lai
+5.4.1 Tiềm năng phát triển
+Dựa trên những ưu điểm và hạn chế đã phân tích, mô hình AI gợi ý và theo dõi tiến trình học tập có tiềm năng rất lớn để phát triển trong tương lai, đặc biệt khi được kết hợp với các công nghệ và phương pháp mới.
+Cá nhân hóa sâu hơn: Thay vì chỉ gợi ý dựa trên hiệu suất học tập, AI có thể phân tích cả sở thích, mục tiêu nghề nghiệp và các kỹ năng đang có để đề xuất những khóa học, tài liệu và lộ trình học tập phù hợp với nguyện vọng cá nhân.
+
+Tăng cường khả năng dự đoán: Mô hình có thể dự đoán không chỉ điểm số mà còn cả khả năng hoàn thành khóa học, nguy cơ bỏ học sớm hay thậm chí là khả năng thành công trong sự nghiệp sau này, dựa trên dữ liệu học tập và hành vi.
+Tự động hóa các tác vụ phức tạp: AI có thể tự động tạo ra các bài kiểm tra, bài tập và câu hỏi phù hợp với trình độ của từng người học, từ đó giảm tải đáng kể công việc cho giảng viên và đảm bảo nội dung học tập luôn được đổi mới.
+5.4.2 Hướng phát triển trong tương lai
+	Xử lý dữ liệu tuần tự: Thay thế hoặc bổ sung cho mô hình Random Forest bằng các mô hình học sâu như Mạng nơ-ron hồi quy (Recurrent Neural Networks - RNN) hoặc Transformers. Những mô hình này có khả năng phân tích chuỗi dữ liệu (ví dụ: trình tự các hành động của người học theo thời gian), từ đó đưa ra những dự đoán chính xác hơn về tiến trình học trong dài hạn.
+	Phát triển chatbot thông minh: Nâng cấp chatbot hiện tại thành một trợ lý ảo toàn diện, có khả năng giải thích các khái niệm phức tạp, gỡ lỗi code và trả lời các câu hỏi mở. Kỹ thuật tạo sinh có tăng cường truy xuất (Retrieval-Augmented Generation - RAG) có thể được sử dụng để chatbot truy cập và tổng hợp thông tin từ kho tài liệu khổng lồ của LMS, từ đó đưa ra câu trả lời chính xác và chi tiết hơn.
+	Sử dụng kiến trúc phân tán: Áp dụng các công nghệ như Docker và Kubernetes để đóng gói và triển khai các microservice của hệ thống AI. Điều này giúp hệ thống có thể tự động co giãn (auto-scaling) theo nhu cầu sử dụng, đảm bảo hiệu suất ổn định ngay cả khi có hàng ngàn người dùng truy cập đồng thời.
+	Cải thiện thuật toán đề xuất: Kết hợp các kỹ thuật Hệ thống gợi ý khác, chẳng hạn như lọc cộng tác (collaborative filtering) và lọc dựa trên nội dung (content-based filtering). Điều này giúp hệ thống không chỉ gợi ý các bài học dựa trên hiệu suất mà còn dựa trên sở thích và hành vi của những người học khác có cùng đặc điểm.
+	Tích hợp thêm các phương thức đánh giá: Phát triển các module đánh giá mới cho các loại bài tập đặc thù như thiết kế hệ thống, thuyết trình, và dự án nhóm. Điều này sẽ giúp AI có cái nhìn toàn diện hơn về năng lực của người học, không chỉ giới hạn ở kiến thức lý thuyết.
+	Tạo nội dung động: AI có thể tự động tạo ra các bài tập, câu đố và ví dụ minh họa dựa trên tiến trình học của từng người, đảm
+ bảo nội dung luôn mới mẻ và thách thức người học ở mức độ phù hợp.
+	Những hướng phát triển trên cho thấy tiềm năng to lớn của việc tích hợp AI vào giáo dục. Hệ thống sẽ không chỉ là một công cụ hỗ trợ mà còn là một người bạn đồng hành tin cậy, giúp người học phát triển tối đa tiềm năng của bản thân trong kỷ nguyên số. 
