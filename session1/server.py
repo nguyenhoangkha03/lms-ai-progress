@@ -116,6 +116,46 @@ def recommend():
         strategy, confidence, additional_info = learning_strategy_ai.predict_strategy(features)
         recommendations = content_recommender.recommend_lessons(db_manager, strategy, analysis_begin)
         """
+        {
+            "data": {
+                "recommendations": [
+                {
+                    "accuracy_percentage": "50.0%",
+                    "correct_total_ratio": 0.5,
+                    "course_id": "course-html-css",
+                    "course_level": "beginner",
+                    "course_title": "HTML & CSS cho người mới bắt đầu",
+                    "order_index": 1,
+                    "priority_rank": "HIGH",
+                    "priority_score": 6.45,
+                    "wrong_easy_questions": 1,
+                    "wrong_total_ratio": 0.5
+                },
+                {
+                    "accuracy_percentage": "50.0%",
+                    "correct_total_ratio": 0.5,
+                    "course_id": "course-js-basic",
+                    "course_level": "beginner",
+                    "course_title": "JavaScript Cơ bản",
+                    "order_index": 2,
+                    "priority_rank": "HIGH",
+                    "priority_score": 6.45,
+                    "wrong_easy_questions": 0,
+                    "wrong_total_ratio": 0.5
+                }
+                ],
+                "strategy": "INTENSIVE_FOUNDATION",
+                "strategy_confidence": 0.75,
+                "total_recommendations": 2
+            },
+            "success": true,
+            "timestamp": "2025-09-06T13:16:36.424338"
+        }
+
+        
+        
+        
+        
         Dữ liệu nhận về dạng : {"data": [{"questionId": "q-html-1", "answer": false}]}
 
         Kết quả trả về:
@@ -179,6 +219,49 @@ def recommend_lessons():
         recommendations = content_recommender.recommend_lessons(db_manager, strategy, analysis)
         # print("Con cá con:", recommendations)
         """
+        
+        {
+            "data": {
+                "recommendations": [
+                {
+                    "accuracy_correct": 0.0,
+                    "course_title": "Front-End",
+                    "data_source": "analyze_user_performance",
+                    "difficulty_affected": [
+                    "easy"
+                    ],
+                    "lesson_accuracy_percentage": "0.0%",
+                    "lesson_correct_total_ratio": "0/2",
+                    "lesson_id": "lesson-html-tags",
+                    "lesson_slug": "the-tieu-de-doan-van",
+                    "lesson_title": "Các thẻ tiêu đề và đoạn văn",
+                    "lesson_wrong_total_ratio": "2/2",
+                    "order_index": 1,
+                    "priority_rank": "CRITICAL",
+                    "priority_score": 8.12,
+                    "questions_wrong": [
+                    {
+                        "orderIndex": 0,
+                        "title": "Thẻ <h1> là thẻ tiêu đề có kích thước lớn nhất."
+                    },
+                    {
+                        "orderIndex": 1,
+                        "title": "Thẻ nào được dùng để định nghĩa một đoạn văn bản?"
+                    }
+                    ],
+                    "reason": "Bạn đã trả lời sai 2 câu hỏi trong bài học này"
+                }
+                ],
+                "strategy": "INTENSIVE_FOUNDATION",
+                "strategy_confidence": 0.79,
+                "total_recommendations": 1
+            },
+            "success": true,
+            "timestamp": "2025-09-06T13:18:15.481516"
+        }
+
+        
+        
         Dữ liệu nhận về dạng: { "data" : {"user_id": "user-student-01", "assessment_attemp_id": "att-01"} }
         Kết quả trả về:
         Tổng tỉ lệ đúng (accuracy_correct),
@@ -236,6 +319,19 @@ def predict_learning_attitude():
         attitude_result = random_forest_model.predict_attitude(analytics_data, return_proba=True)
         
         """
+        
+        {
+            "data": {
+                "confidence": 0.9231411405201727,
+                "predicted_attitude": "Give_up",
+                "reason": "Bạn đã nghỉ 0 ngày, tổng thời gian online là 0.0 giờ và tổng số thao tác là 0",
+                "user_id": "user-student-01"
+            },
+            "success": true,
+            "timestamp": "2025-09-06T13:21:32.023176"
+        }
+
+        
         Dữ nhận nhận về: { "data" : {"user_id": "user-student-01"} }
         Kết quả trả về:
         Độ tin cậy (confidence),
@@ -288,6 +384,17 @@ def aitrack():
         
         
         """
+        {
+            "data": {
+                "performance_level": "good",
+                "predicted_score": 8.02,
+                "trend_prediction": "giảm",
+                "user_id": "user-student-01"
+            },
+            "success": true,
+            "timestamp": "2025-09-06T13:08:27.550314"
+        }
+        
         Dữ liệu nhận về: {"data": {"user_id": "user-student-01", "course_id": "course-html-css"}}
         Kết quả trả về:
         Đánh giá (performance_level),
